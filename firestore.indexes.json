@@ -1,0 +1,34 @@
+{
+  "indexes": [
+    {
+      "collectionGroup": "representatives",
+      "queryScope": "COLLECTION",
+      "fields": [
+        { "fieldPath": "normalizedName", "order": "ASCENDING" },
+        { "fieldPath": "successIndex", "order": "DESCENDING" }
+      ]
+    }
+  ],
+  "fieldOverrides": [
+    {
+      "collectionGroup": "dashboard_periods",
+      "fieldPath": "payload",
+      "indexes": []
+    },
+    {
+      "collectionGroup": "dashboard_periods",
+      "fieldPath": "securePayload",
+      "indexes": []
+    },
+    {
+      "collectionGroup": "representatives",
+      "fieldPath": "payload",
+      "indexes": []
+    },
+    {
+      "collectionGroup": "representatives",
+      "fieldPath": "securePayload",
+      "indexes": []
+    }
+  ]
+}

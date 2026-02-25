@@ -1,0 +1,102 @@
+@import url('https://fonts.googleapis.com/css2?family=Space+Grotesk:wght@400;500;600;700&display=swap');
+@import "tailwindcss";
+
+@theme {
+  --color-background: #ebf4f6;
+  --color-foreground: #173039;
+  --color-muted: #d7e8ed;
+  --color-muted-foreground: #5a7480;
+  --color-border: #c4d8df;
+  --color-input: #c4d8df;
+  --color-ring: #2e6676;
+  --color-primary: #2a6373;
+  --color-primary-foreground: #f6fcfd;
+  --color-secondary: #dcecf1;
+  --color-secondary-foreground: #1c4654;
+  --color-accent: #d4e6ec;
+  --color-accent-foreground: #173039;
+  --color-destructive: #c14557;
+  --color-destructive-foreground: #fff7f8;
+  --color-card: #ffffff;
+  --color-card-foreground: #173039;
+  --color-popover: #ffffff;
+  --color-popover-foreground: #173039;
+
+  --color-ikas-green: #3d8d86;
+  --color-ikas-dark: #173039;
+  --color-ikas-lime: #77bc8a;
+
+  --radius-lg: 0.95rem;
+  --radius-md: calc(var(--radius-lg) - 2px);
+  --radius-sm: calc(var(--radius-lg) - 6px);
+
+  --font-sans: "Space Grotesk", "Segoe UI", sans-serif;
+}
+
+* {
+  box-sizing: border-box;
+}
+
+body {
+  margin: 0;
+  min-height: 100vh;
+  font-family: var(--font-sans);
+  background-color: #ebf4f6;
+  background-image:
+    radial-gradient(circle at 8% 10%, rgba(61, 141, 134, 0.16), transparent 35%),
+    radial-gradient(circle at 92% 4%, rgba(42, 99, 115, 0.12), transparent 28%),
+    linear-gradient(145deg, rgba(255, 255, 255, 0.5) 0%, rgba(235, 244, 246, 0.92) 44%, rgba(218, 234, 239, 0.7) 100%);
+  color: var(--color-foreground);
+  line-height: 1.45;
+  -webkit-font-smoothing: antialiased;
+  -moz-osx-font-smoothing: grayscale;
+}
+
+::selection {
+  background: rgba(42, 99, 115, 0.22);
+  color: var(--color-foreground);
+}
+
+.surface-shell {
+  border: 1px solid rgba(255, 255, 255, 0.72);
+  border-radius: 1.5rem;
+  background: rgba(255, 255, 255, 0.42);
+  box-shadow: 0 28px 70px -52px rgba(19, 48, 57, 0.58);
+  backdrop-filter: blur(12px);
+}
+
+@supports not (backdrop-filter: blur(1px)) {
+  .surface-shell {
+    background: rgba(255, 255, 255, 0.85);
+  }
+}
+
+.soft-grid {
+  background-image:
+    linear-gradient(to right, rgba(23, 48, 57, 0.035) 1px, transparent 1px),
+    linear-gradient(to bottom, rgba(23, 48, 57, 0.035) 1px, transparent 1px);
+  background-size: 24px 24px;
+}
+
+@keyframes fade-up {
+  from {
+    opacity: 0;
+    transform: translateY(14px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
+.fade-up {
+  animation: fade-up 460ms cubic-bezier(0.22, 1, 0.36, 1) both;
+}
+
+.fade-up-delay-1 {
+  animation-delay: 70ms;
+}
+
+.fade-up-delay-2 {
+  animation-delay: 130ms;
+}
