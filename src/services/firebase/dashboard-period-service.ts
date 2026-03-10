@@ -1,5 +1,6 @@
 import {
   collection,
+  deleteField,
   doc,
   getDoc,
   getDocs,
@@ -51,6 +52,22 @@ interface EncryptedPeriodPayload {
   monthlyTargets: DashboardPeriodData['monthlyTargets']
   successIndex: DashboardPeriodData['successIndex']
   representativeWeights: DashboardPeriodData['representativeWeights']
+}
+
+function stripUndefinedDeep<T>(value: T): T {
+  if (Array.isArray(value)) {
+    return value.map((item) => stripUndefinedDeep(item)) as T
+  }
+
+  if (value && typeof value === 'object') {
+    const entries = Object.entries(value as Record<string, unknown>)
+      .filter(([, entry]) => entry !== undefined)
+      .map(([key, entry]) => [key, stripUndefinedDeep(entry)] as const)
+
+    return Object.fromEntries(entries) as T
+  }
+
+  return value
 }
 
 export interface RepresentativeCloudSearchParams {
@@ -137,7 +154,7 @@ export async function saveDashboardPeriodToCloud(
   const periodRef = getPeriodDocRef(year, month)
   const repsRef = getRepresentativesRef(year, month)
   const existingPeriodSnapshot = await getDoc(periodRef)
-  const periodDataPayload: EncryptedPeriodPayload = {
+  const periodDataPayload = stripUndefinedDeep<EncryptedPeriodPayload>({
     monthlyGPV: data.monthlyGPV,
     cohort: data.cohort,
     topFirms: data.topFirms,
@@ -146,29 +163,38 @@ export async function saveDashboardPeriodToCloud(
     monthlyTargets: data.monthlyTargets,
     successIndex: data.successIndex,
     representativeWeights: data.representativeWeights,
-  }
+  })
 
   const encryptedPeriodPayload = isAes256Enabled()
     ? await encryptJsonAES256(periodDataPayload)
     : null
 
+  const periodDocPayload = {
+    periodKey: periodKey(year, month),
+    year,
+    month,
+    previousPeriodKey: getPreviousPeriodKey(year, month),
+    schemaVersion: PERIOD_SCHEMA_VERSION,
+    representativeCount: data.representativeSuccess.length,
+    usesEncryption: Boolean(encryptedPeriodPayload),
+    ...(encryptedPeriodPayload
+      ? {
+          payload: deleteField(),
+          securePayload: encryptedPeriodPayload,
+        }
+      : {
+          payload: periodDataPayload,
+          securePayload: deleteField(),
+        }),
+    createdAt: existingPeriodSnapshot.exists()
+      ? (existingPeriodSnapshot.data().createdAt ?? serverTimestamp())
+      : serverTimestamp(),
+    updatedAt: serverTimestamp(),
+  }
+
   await setDoc(
     periodRef,
-    {
-      periodKey: periodKey(year, month),
-      year,
-      month,
-      previousPeriodKey: getPreviousPeriodKey(year, month),
-      schemaVersion: PERIOD_SCHEMA_VERSION,
-      representativeCount: data.representativeSuccess.length,
-      usesEncryption: Boolean(encryptedPeriodPayload),
-      payload: encryptedPeriodPayload ? undefined : periodDataPayload,
-      securePayload: encryptedPeriodPayload ?? undefined,
-      createdAt: existingPeriodSnapshot.exists()
-        ? (existingPeriodSnapshot.data().createdAt ?? serverTimestamp())
-        : serverTimestamp(),
-      updatedAt: serverTimestamp(),
-    },
+    periodDocPayload,
     { merge: true },
   )
 
@@ -182,18 +208,19 @@ export async function saveDashboardPeriodToCloud(
     existingIds.delete(rep.id)
 
     const metrics = calculateRepresentativeMetrics(rep, data.representativeWeights)
+    const repPayload = stripUndefinedDeep<RepresentativeSuccessRecord>({
+      id: rep.id,
+      name: rep.name,
+      liveCount: rep.liveCount,
+      liveTarget: rep.liveTarget,
+      auditScore: rep.auditScore,
+      npsScore: rep.npsScore,
+      avgGoLiveDurationDays: rep.avgGoLiveDurationDays,
+      meetingScore: rep.meetingScore,
+      imageUrl: rep.imageUrl ?? '',
+    })
     const encryptedRepPayload = isAes256Enabled()
-      ? await encryptJsonAES256<EncryptedRepresentativePayload>({
-          id: rep.id,
-          name: rep.name,
-          liveCount: rep.liveCount,
-          liveTarget: rep.liveTarget,
-          auditScore: rep.auditScore,
-          npsScore: rep.npsScore,
-          avgGoLiveDurationDays: rep.avgGoLiveDurationDays,
-          meetingScore: rep.meetingScore,
-          imageUrl: rep.imageUrl,
-        })
+      ? await encryptJsonAES256<EncryptedRepresentativePayload>(repPayload)
       : null
 
     batch.set(
@@ -203,8 +230,15 @@ export async function saveDashboardPeriodToCloud(
         periodKey: periodKey(year, month),
         normalizedName: normalizeName(rep.name),
         successIndex: Number(metrics.successIndex.toFixed(3)),
-        payload: encryptedRepPayload ? undefined : rep,
-        securePayload: encryptedRepPayload ?? undefined,
+        ...(encryptedRepPayload
+          ? {
+              payload: deleteField(),
+              securePayload: encryptedRepPayload,
+            }
+          : {
+              payload: repPayload,
+              securePayload: deleteField(),
+            }),
         updatedAt: serverTimestamp(),
       },
       { merge: true },
