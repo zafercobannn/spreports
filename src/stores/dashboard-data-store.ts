@@ -31,6 +31,22 @@ const DEFAULT_REPRESENTATIVE_WEIGHTS: RepresentativeSuccessWeights = {
   meetingScore: 20,
 }
 
+export type CloudSyncStatus = 'idle' | 'queued' | 'saving' | 'success' | 'error'
+
+export interface PeriodCloudSyncState {
+  status: CloudSyncStatus
+  lastSavedAt: number | null
+  lastError: string | null
+}
+
+function createInitialCloudSyncState(): PeriodCloudSyncState {
+  return {
+    status: 'idle',
+    lastSavedAt: null,
+    lastError: null,
+  }
+}
+
 function deepClone<T>(value: T): T {
   if (typeof structuredClone === 'function') {
     return structuredClone(value)
@@ -616,23 +632,96 @@ function clearPendingCloudSaves(): void {
   periodSaveTimers.clear()
 }
 
-function schedulePeriodSaveToCloud(year: number, month: number, data: DashboardPeriodData): void {
+function clearPendingCloudSave(key: string): void {
+  const timerId = periodSaveTimers.get(key)
+  if (!timerId) return
+  clearTimeout(timerId)
+  periodSaveTimers.delete(key)
+}
+
+function setPeriodCloudSyncState(
+  set: StoreApi<DashboardDataStore>['setState'],
+  key: string,
+  partial: Partial<PeriodCloudSyncState>,
+): void {
+  set((state) => ({
+    cloudSyncByPeriod: {
+      ...state.cloudSyncByPeriod,
+      [key]: {
+        ...(state.cloudSyncByPeriod[key] ?? createInitialCloudSyncState()),
+        ...partial,
+      },
+    },
+  }))
+}
+
+async function persistPeriodToCloud(
+  year: number,
+  month: number,
+  data: DashboardPeriodData,
+  set: StoreApi<DashboardDataStore>['setState'],
+): Promise<void> {
   if (!isCloudPersistenceEnabled()) return
 
   const key = getPeriodKey(year, month)
-  const prevTimer = periodSaveTimers.get(key)
-  if (prevTimer) {
-    clearTimeout(prevTimer)
+  setPeriodCloudSyncState(set, key, {
+    status: 'saving',
+    lastError: null,
+  })
+
+  try {
+    await saveDashboardPeriodToCloud(year, month, data)
+    setPeriodCloudSyncState(set, key, {
+      status: 'success',
+      lastSavedAt: Date.now(),
+      lastError: null,
+    })
+  } catch (error) {
+    const message = error instanceof Error ? error.message : 'Bulut kaydı başarısız.'
+    setPeriodCloudSyncState(set, key, {
+      status: 'error',
+      lastError: message,
+    })
+    throw error
   }
+}
+
+function schedulePeriodSaveToCloud(
+  year: number,
+  month: number,
+  data: DashboardPeriodData,
+  set: StoreApi<DashboardDataStore>['setState'],
+): void {
+  if (!isCloudPersistenceEnabled()) return
+
+  const key = getPeriodKey(year, month)
+  clearPendingCloudSave(key)
+  setPeriodCloudSyncState(set, key, {
+    status: 'queued',
+    lastError: null,
+  })
 
   const nextTimer = setTimeout(() => {
     periodSaveTimers.delete(key)
-    void saveDashboardPeriodToCloud(year, month, data).catch((error) => {
+    void persistPeriodToCloud(year, month, data, set).catch((error) => {
       console.error('[dashboard-data-store] Bulut kaydı başarısız:', error)
     })
   }, CLOUD_SAVE_DEBOUNCE_MS)
 
   periodSaveTimers.set(key, nextTimer)
+}
+
+async function flushPeriodSaveToCloud(
+  year: number,
+  month: number,
+  data: DashboardPeriodData,
+  set: StoreApi<DashboardDataStore>['setState'],
+): Promise<void> {
+  if (!isCloudPersistenceEnabled()) return
+
+  const key = getPeriodKey(year, month)
+  clearPendingCloudSave(key)
+  await persistPeriodToCloud(year, month, data, set)
 }
 
 function safeStorageGetItem(key: string): string | null {
@@ -661,6 +750,7 @@ function safeStorageRemoveItem(key: string): void {
 
 function migrateLocalPeriodsToCloudIfNeeded(
   get: StoreApi<DashboardDataStore>['getState'],
+  set: StoreApi<DashboardDataStore>['setState'],
 ): Promise<void> {
   if (!isCloudPersistenceEnabled()) return Promise.resolve()
 
@@ -677,7 +767,7 @@ function migrateLocalPeriodsToCloudIfNeeded(
       const cloudData = await loadDashboardPeriodFromCloud(parsedKey.year, parsedKey.month)
       if (cloudData) continue
 
-      await saveDashboardPeriodToCloud(parsedKey.year, parsedKey.month, periodData)
+      await persistPeriodToCloud(parsedKey.year, parsedKey.month, periodData, set)
       hydratedPeriodKeys.add(key)
     }
 
@@ -711,7 +801,7 @@ function ensurePeriodRemoteFirst(
 
   const ensureTask = (async () => {
     if (isCloudPersistenceEnabled()) {
-      await migrateLocalPeriodsToCloudIfNeeded(get)
+      await migrateLocalPeriodsToCloudIfNeeded(get, set)
 
       const cloudData = await loadDashboardPeriodFromCloud(normalized.year, normalized.month)
       if (cloudData && getLocalPeriodVersion(key) === localVersionAtStart) {
@@ -743,7 +833,7 @@ function ensurePeriodRemoteFirst(
     }))
 
     if (isCloudPersistenceEnabled()) {
-      void saveDashboardPeriodToCloud(normalized.year, normalized.month, fresh).catch((error) => {
+      void persistPeriodToCloud(normalized.year, normalized.month, fresh, set).catch((error) => {
         console.error('[dashboard-data-store] Yeni dönem buluta yazılamadı:', error)
       })
     }
@@ -773,6 +863,7 @@ function ensurePeriodRemoteFirst(
 
 interface DashboardDataStore {
   periods: Record<string, DashboardPeriodData>
+  cloudSyncByPeriod: Record<string, PeriodCloudSyncState>
   ensurePeriod: (year: number, month: number) => void
   updatePeriodData: (
     year: number,
@@ -780,6 +871,7 @@ interface DashboardDataStore {
     updater: (data: DashboardPeriodData) => DashboardPeriodData
   ) => void
   replacePeriodData: (year: number, month: number, data: DashboardPeriodData) => void
+  savePeriodNow: (year: number, month: number) => Promise<void>
   resetPeriod: (year: number, month: number) => void
   resetAll: () => void
 }
@@ -788,6 +880,7 @@ export const useDashboardDataStore = create<DashboardDataStore>()(
   persist(
     (set, get) => ({
       periods: createInitialPeriods(),
+      cloudSyncByPeriod: {},
       ensurePeriod: (year, month) => {
         void ensurePeriodRemoteFirst(year, month, get, set)
       },
@@ -808,7 +901,7 @@ export const useDashboardDataStore = create<DashboardDataStore>()(
         })
         const latest = ensurePeriodsMap(get().periods)[key]
         if (latest) {
-          schedulePeriodSaveToCloud(year, month, latest)
+          schedulePeriodSaveToCloud(year, month, latest, set)
         }
       },
       replacePeriodData: (year, month, data) => {
@@ -822,7 +915,18 @@ export const useDashboardDataStore = create<DashboardDataStore>()(
             [key]: normalized,
           },
         }))
-        schedulePeriodSaveToCloud(year, month, normalized)
+        schedulePeriodSaveToCloud(year, month, normalized, set)
+      },
+      savePeriodNow: async (year, month) => {
+        const key = getPeriodKey(year, month)
+        const current = ensurePeriodsMap(get().periods)[key] ?? createEmptyPeriodData(year, month)
+
+        try {
+          await flushPeriodSaveToCloud(year, month, current, set)
+        } catch (error) {
+          console.error('[dashboard-data-store] Manuel bulut kaydı başarısız:', error)
+          throw error
+        }
       },
       resetPeriod: (year, month) => {
         const key = getPeriodKey(year, month)
@@ -835,7 +939,7 @@ export const useDashboardDataStore = create<DashboardDataStore>()(
             [key]: fresh,
           },
         }))
-        schedulePeriodSaveToCloud(year, month, fresh)
+        schedulePeriodSaveToCloud(year, month, fresh, set)
       },
       resetAll: () => {
         clearPendingCloudSaves()
@@ -844,7 +948,7 @@ export const useDashboardDataStore = create<DashboardDataStore>()(
         hydratedPeriodKeys.clear()
         localToCloudMigrationTask = null
         safeStorageRemoveItem(LOCAL_TO_CLOUD_MIGRATION_FLAG)
-        set({ periods: createInitialPeriods() })
+        set({ periods: createInitialPeriods(), cloudSyncByPeriod: {} })
       },
     }),
     {
@@ -858,6 +962,7 @@ export const useDashboardDataStore = create<DashboardDataStore>()(
           ...current,
           ...persisted,
           periods: ensurePeriodsMap(persisted.periods ?? current.periods),
+          cloudSyncByPeriod: current.cloudSyncByPeriod,
         }
       },
     },

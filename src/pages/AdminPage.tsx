@@ -10,7 +10,9 @@ import { AdminLoginExperience } from '@/features/auth/AdminLoginExperience'
 import { CohortHeatmapEditor } from '@/features/cohort/CohortHeatmapEditor'
 import { RepresentativeSuccessAdmin } from '@/features/team-performance/RepresentativeSuccessAdmin'
 import { useFilters } from '@/hooks/use-filters'
+import { isCloudPersistenceEnabled } from '@/services/firebase/dashboard-period-service'
 import { getPeriodKey, useDashboardDataStore } from '@/stores/dashboard-data-store'
+import type { CloudSyncStatus } from '@/stores/dashboard-data-store'
 import type { DashboardPeriodData } from '@/types/dashboard-data'
 import type { TargetStatus } from '@/types/targets'
 import { TURKISH_MONTHS, getMonthName } from '@/utils/date-utils'
@@ -30,6 +32,35 @@ function toNumber(value: string): number {
   return Number.isFinite(parsed) ? parsed : 0
 }
 
+function getCloudSyncBadgeVariant(status: CloudSyncStatus) {
+  switch (status) {
+    case 'success':
+      return 'success' as const
+    case 'queued':
+    case 'saving':
+      return 'warning' as const
+    case 'error':
+      return 'destructive' as const
+    default:
+      return 'outline' as const
+  }
+}
+
+function getCloudSyncLabel(status: CloudSyncStatus): string {
+  switch (status) {
+    case 'queued':
+      return 'Kuyrukta'
+    case 'saving':
+      return 'Kaydediliyor'
+    case 'success':
+      return 'Kaydedildi'
+    case 'error':
+      return 'Hata'
+    default:
+      return 'Beklemede'
+  }
+}
+
 function AdminWorkspace() {
   const { signOut, userEmail } = useAdminAuth()
   const { year: currentYear, month: currentMonth } = useFilters()
@@ -41,7 +72,9 @@ function AdminWorkspace() {
   const periodKey = useMemo(() => getPeriodKey(editYear, editMonth), [editYear, editMonth])
 
   const periodData = useDashboardDataStore((s) => s.periods[periodKey])
+  const cloudSync = useDashboardDataStore((s) => s.cloudSyncByPeriod[periodKey])
   const ensurePeriod = useDashboardDataStore((s) => s.ensurePeriod)
+  const savePeriodNow = useDashboardDataStore((s) => s.savePeriodNow)
   const updatePeriodData = useDashboardDataStore((s) => s.updatePeriodData)
   const resetPeriod = useDashboardDataStore((s) => s.resetPeriod)
   const resetAll = useDashboardDataStore((s) => s.resetAll)
@@ -97,6 +130,15 @@ function AdminWorkspace() {
   }
 
   if (!periodData) return null
+
+  const cloudStatus = cloudSync?.status ?? 'idle'
+  const lastSavedAtLabel = cloudSync?.lastSavedAt
+    ? new Intl.DateTimeFormat('tr-TR', {
+      dateStyle: 'short',
+      timeStyle: 'medium',
+    }).format(new Date(cloudSync.lastSavedAt))
+    : 'Henüz başarılı kayıt yok'
+  const cloudSyncEnabled = isCloudPersistenceEnabled()
 
   return (
     <div className="min-h-screen bg-background px-4 py-6 sm:px-6 lg:px-8">
@@ -177,6 +219,58 @@ function AdminWorkspace() {
               <Badge variant="outline">Dönem: {periodKey}</Badge>
             </div>
           </CardHeader>
+        </Card>
+
+        <Card>
+          <CardHeader className="gap-3">
+            <div className="flex flex-col gap-3 md:flex-row md:items-center md:justify-between">
+              <div>
+                <CardTitle className="text-base">Bulut Senkron Durumu</CardTitle>
+                <CardDescription>
+                  Firestore kayıt durumu seçili dönem için burada izlenir.
+                </CardDescription>
+              </div>
+              <div className="flex flex-wrap items-center gap-2">
+                <Badge variant={cloudSyncEnabled ? 'success' : 'warning'}>
+                  {cloudSyncEnabled ? 'Firebase Sync Aktif' : 'Local Fallback'}
+                </Badge>
+                <Badge variant={getCloudSyncBadgeVariant(cloudStatus)}>
+                  {getCloudSyncLabel(cloudStatus)}
+                </Badge>
+                <Button
+                  size="sm"
+                  variant="outline"
+                  disabled={!cloudSyncEnabled || cloudStatus === 'saving'}
+                  onClick={() => {
+                    void savePeriodNow(editYear, editMonth)
+                  }}
+                >
+                  <Upload className="mr-2 h-4 w-4" />
+                  Şimdi Kaydet
+                </Button>
+              </div>
+            </div>
+          </CardHeader>
+          <CardContent className="grid grid-cols-1 gap-3 md:grid-cols-3">
+            <div className="rounded-xl border border-border/70 bg-white/70 p-4">
+              <p className="text-xs font-semibold tracking-[0.08em] text-muted-foreground uppercase">Dönem Anahtarı</p>
+              <p className="mt-2 text-sm font-medium text-foreground">{periodKey}</p>
+            </div>
+            <div className="rounded-xl border border-border/70 bg-white/70 p-4">
+              <p className="text-xs font-semibold tracking-[0.08em] text-muted-foreground uppercase">Son Başarılı Kayıt</p>
+              <p className="mt-2 text-sm font-medium text-foreground">{lastSavedAtLabel}</p>
+            </div>
+            <div className="rounded-xl border border-border/70 bg-white/70 p-4">
+              <p className="text-xs font-semibold tracking-[0.08em] text-muted-foreground uppercase">Firestore Path</p>
+              <p className="mt-2 break-all text-sm font-medium text-foreground">dashboard_periods/{periodKey}</p>
+            </div>
+            {cloudSync?.lastError && (
+              <div className="rounded-xl border border-destructive/30 bg-destructive/5 p-4 md:col-span-3">
+                <p className="text-xs font-semibold tracking-[0.08em] text-destructive uppercase">Son Hata</p>
+                <p className="mt-2 text-sm font-medium text-destructive">{cloudSync.lastError}</p>
+              </div>
+            )}
+          </CardContent>
         </Card>
 
         {(importInfo || importError) && (
