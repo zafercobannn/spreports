@@ -1,10 +1,23 @@
 import { initializeApp, getApps, getApp } from 'firebase/app'
+import { getAnalytics, isSupported, type Analytics } from 'firebase/analytics'
+import {
+  getAuth,
+  onAuthStateChanged,
+  signInWithEmailAndPassword,
+  signOut,
+  type Auth,
+  type User,
+} from 'firebase/auth'
 import { getFirestore } from 'firebase/firestore'
 import { getStorage } from 'firebase/storage'
 
 function readEnv(name: string): string {
   const value = import.meta.env[name]
   return typeof value === 'string' ? value.trim() : ''
+}
+
+function normalizeEmail(value: string): string {
+  return value.trim().toLocaleLowerCase('en-US')
 }
 
 const firebaseConfig = {
@@ -14,6 +27,7 @@ const firebaseConfig = {
   storageBucket: readEnv('VITE_FIREBASE_STORAGE_BUCKET'),
   messagingSenderId: readEnv('VITE_FIREBASE_MESSAGING_SENDER_ID'),
   appId: readEnv('VITE_FIREBASE_APP_ID'),
+  measurementId: readEnv('VITE_FIREBASE_MEASUREMENT_ID'),
 }
 
 const requiredFields = {
@@ -30,12 +44,26 @@ const missingFirebaseConfigKeys = Object.entries(requiredFields)
   .map(([key]) => key)
 
 const syncFlag = import.meta.env.VITE_ENABLE_FIREBASE_SYNC !== 'false'
+const fallbackAdminEmails = ['hilal.mingin@ikas.com']
+const adminEmailSet = new Set(
+  [...fallbackAdminEmails, ...readEnv('VITE_FIREBASE_ADMIN_EMAILS').split(',')]
+    .map(normalizeEmail)
+    .filter(Boolean),
+)
+
 export const isFirebaseSyncEnabled = syncFlag && missingFirebaseConfigKeys.length === 0
 export const firebaseConfigErrors = missingFirebaseConfigKeys
+export const isFirebaseAnalyticsConfigured = firebaseConfig.measurementId.length > 0
+export const firebaseAdminEmails = Array.from(adminEmailSet)
+export const firebasePrimaryAdminEmail = firebaseAdminEmails[0] ?? ''
 
 let appInstance: ReturnType<typeof initializeApp> | null = null
 let firestoreInstance: ReturnType<typeof getFirestore> | null = null
 let storageInstance: ReturnType<typeof getStorage> | null = null
+let authInstance: Auth | null = null
+let analyticsInstance: Analytics | null = null
+let analyticsSupportPromise: Promise<boolean> | null = null
+let analyticsReadyPromise: Promise<Analytics | null> | null = null
 
 function ensureApp() {
   if (!isFirebaseSyncEnabled) {
@@ -65,4 +93,86 @@ export function getFirebaseStorageInstance() {
     storageInstance = getStorage(ensureApp())
   }
   return storageInstance
+}
+
+export function getFirebaseAuthInstance() {
+  if (!authInstance) {
+    authInstance = getAuth(ensureApp())
+  }
+  return authInstance
+}
+
+export function isFirebaseAdminEmail(email: string | null | undefined): boolean {
+  if (!email) return false
+  return adminEmailSet.has(normalizeEmail(email))
+}
+
+export function getCurrentFirebaseUser(): User | null {
+  return getFirebaseAuthInstance().currentUser
+}
+
+export function requireSignedInFirebaseUser(): User {
+  const user = getCurrentFirebaseUser()
+  if (!user) {
+    throw new Error('Bu alanı görüntülemek için yönetici girişi yapmalısınız.')
+  }
+  return user
+}
+
+export function requireAdminFirebaseUser(): User {
+  const user = requireSignedInFirebaseUser()
+  if (!isFirebaseAdminEmail(user.email)) {
+    throw new Error('Bu hesap admin erişimine sahip değil.')
+  }
+  return user
+}
+
+export function observeFirebaseAuthState(callback: (user: User | null) => void) {
+  return onAuthStateChanged(getFirebaseAuthInstance(), callback)
+}
+
+export async function signInWithFirebaseEmail(email: string, password: string): Promise<User> {
+  const auth = getFirebaseAuthInstance()
+  const credential = await signInWithEmailAndPassword(auth, normalizeEmail(email), password)
+
+  if (!isFirebaseAdminEmail(credential.user.email)) {
+    await signOut(auth)
+    throw new Error('Bu hesap admin erişimine sahip değil.')
+  }
+
+  return credential.user
+}
+
+export async function signOutFirebaseUser(): Promise<void> {
+  const auth = getFirebaseAuthInstance()
+  if (!auth.currentUser) return
+  await signOut(auth)
+}
+
+async function isFirebaseAnalyticsSupported(): Promise<boolean> {
+  if (!isFirebaseAnalyticsConfigured) return false
+  if (typeof window === 'undefined') return false
+
+  if (!analyticsSupportPromise) {
+    analyticsSupportPromise = isSupported().catch(() => false)
+  }
+
+  return analyticsSupportPromise
+}
+
+export async function getFirebaseAnalyticsInstance(): Promise<Analytics | null> {
+  if (!isFirebaseSyncEnabled) return null
+  if (analyticsInstance) return analyticsInstance
+  if (analyticsReadyPromise) return analyticsReadyPromise
+
+  analyticsReadyPromise = (async () => {
+    if (!(await isFirebaseAnalyticsSupported())) return null
+
+    analyticsInstance = getAnalytics(ensureApp())
+    return analyticsInstance
+  })().finally(() => {
+    analyticsReadyPromise = null
+  })
+
+  return analyticsReadyPromise
 }

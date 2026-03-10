@@ -15,7 +15,12 @@ import {
   writeBatch,
 } from 'firebase/firestore'
 import { deleteObject, getDownloadURL, ref, uploadBytes } from 'firebase/storage'
-import { getFirebaseDb, getFirebaseStorageInstance, isFirebaseSyncEnabled } from '@/lib/firebase/firebase-app'
+import {
+  getFirebaseDb,
+  getFirebaseStorageInstance,
+  isFirebaseSyncEnabled,
+  requireAdminFirebaseUser,
+} from '@/lib/firebase/firebase-app'
 import { decryptJsonAES256, encryptJsonAES256, isAes256Enabled } from '@/lib/security/aes-256'
 import type { DashboardPeriodData } from '@/types/dashboard-data'
 import type { RepresentativeSuccessRecord } from '@/types/team'
@@ -23,6 +28,7 @@ import { calculateRepresentativeMetrics } from '@/features/team-performance/repr
 
 const PERIOD_COLLECTION = 'dashboard_periods'
 const REPRESENTATIVE_SUBCOLLECTION = 'representatives'
+const PERIOD_SCHEMA_VERSION = 2
 
 interface EncryptedRepresentativePayload {
   id: string
@@ -31,6 +37,7 @@ interface EncryptedRepresentativePayload {
   liveTarget: number
   auditScore: number
   npsScore: number
+  avgGoLiveDurationDays: number
   meetingScore: number
   imageUrl?: string
 }
@@ -57,6 +64,12 @@ export interface RepresentativeCloudSearchParams {
 
 function periodKey(year: number, month: number): string {
   return `${year}-${String(month).padStart(2, '0')}`
+}
+
+function getPreviousPeriodKey(year: number, month: number): string {
+  const previousMonth = month === 1 ? 12 : month - 1
+  const previousYear = month === 1 ? year - 1 : year
+  return periodKey(previousYear, previousMonth)
 }
 
 function normalizeName(value: string): string {
@@ -87,6 +100,7 @@ function parseRepresentativeFallback(data: Record<string, unknown>): Representat
     liveTarget: Number(data.liveTarget ?? 0),
     auditScore: Number(data.auditScore ?? 0),
     npsScore: Number(data.npsScore ?? 0),
+    avgGoLiveDurationDays: Number(data.avgGoLiveDurationDays ?? 0),
     meetingScore: Number(data.meetingScore ?? 0),
     imageUrl: typeof data.imageUrl === 'string' ? data.imageUrl : '',
   }
@@ -118,9 +132,11 @@ export async function saveDashboardPeriodToCloud(
   data: DashboardPeriodData,
 ): Promise<void> {
   if (!isCloudPersistenceEnabled()) return
+  requireAdminFirebaseUser()
 
   const periodRef = getPeriodDocRef(year, month)
   const repsRef = getRepresentativesRef(year, month)
+  const existingPeriodSnapshot = await getDoc(periodRef)
   const periodDataPayload: EncryptedPeriodPayload = {
     monthlyGPV: data.monthlyGPV,
     cohort: data.cohort,
@@ -142,10 +158,15 @@ export async function saveDashboardPeriodToCloud(
       periodKey: periodKey(year, month),
       year,
       month,
+      previousPeriodKey: getPreviousPeriodKey(year, month),
+      schemaVersion: PERIOD_SCHEMA_VERSION,
       representativeCount: data.representativeSuccess.length,
       usesEncryption: Boolean(encryptedPeriodPayload),
       payload: encryptedPeriodPayload ? undefined : periodDataPayload,
       securePayload: encryptedPeriodPayload ?? undefined,
+      createdAt: existingPeriodSnapshot.exists()
+        ? (existingPeriodSnapshot.data().createdAt ?? serverTimestamp())
+        : serverTimestamp(),
       updatedAt: serverTimestamp(),
     },
     { merge: true },
@@ -169,6 +190,7 @@ export async function saveDashboardPeriodToCloud(
           liveTarget: rep.liveTarget,
           auditScore: rep.auditScore,
           npsScore: rep.npsScore,
+          avgGoLiveDurationDays: rep.avgGoLiveDurationDays,
           meetingScore: rep.meetingScore,
           imageUrl: rep.imageUrl,
         })
@@ -201,6 +223,7 @@ export async function loadDashboardPeriodFromCloud(
   month: number,
 ): Promise<DashboardPeriodData | null> {
   if (!isCloudPersistenceEnabled()) return null
+  requireAdminFirebaseUser()
 
   const periodRef = getPeriodDocRef(year, month)
   const periodSnapshot = await getDoc(periodRef)
@@ -250,6 +273,7 @@ export async function searchRepresentativesInCloud({
   take = 25,
 }: RepresentativeCloudSearchParams): Promise<RepresentativeSuccessRecord[]> {
   if (!isCloudPersistenceEnabled()) return []
+  requireAdminFirebaseUser()
 
   const repsRef = getRepresentativesRef(year, month)
   const normalizedSearch = search ? normalizeName(search) : ''
@@ -314,6 +338,7 @@ export async function uploadRepresentativeImageToCloud(
   if (!isCloudPersistenceEnabled()) {
     throw new Error('Firebase aktif değil. Görsel buluta yüklenemedi.')
   }
+  requireAdminFirebaseUser()
 
   const extension = (() => {
     if (file.type.includes('png')) return 'png'
@@ -332,6 +357,7 @@ export async function uploadRepresentativeImageToCloud(
 export async function deleteRepresentativeImageFromCloud(imageUrl: string): Promise<void> {
   if (!isCloudPersistenceEnabled()) return
   if (!imageUrl) return
+  requireAdminFirebaseUser()
 
   try {
     const fileRef = ref(getFirebaseStorageInstance(), imageUrl)

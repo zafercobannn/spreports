@@ -31,13 +31,13 @@ export function HeatmapChart({
       }}
       colors={{
         type: 'quantize',
-        colors: ['#fbfee9', '#f6ffd5', '#f1ffc0', '#ecffac', '#e7ff98', '#e2ff72', '#deff36', '#c0dd34'],
+        colors: ['#d6e7d1', '#bddab2', '#9ac88a', '#75b35f', '#4d953a', '#2f7a1f'],
       }}
-      emptyColor="#f8faee"
+      emptyColor="#d6d7db"
       borderRadius={4}
-      borderWidth={2}
-      borderColor="#edf3cf"
-      labelTextColor={{ from: 'color', modifiers: [['darker', 2.2]] }}
+      borderWidth={1}
+      borderColor="#eceef1"
+      labelTextColor="#f8fafc"
       theme={dashboardChartTheme}
       animate
       motionConfig="gentle"

@@ -2,6 +2,8 @@ import { TabsList, TabsTrigger } from '@/components/ui/tabs'
 import type { DashboardTab } from '@/types/filters'
 import {
   BarChart3,
+  BarChartHorizontalBig,
+  Flag,
   Grid3X3,
   Trophy,
   Target,
@@ -15,9 +17,11 @@ interface TabNavigationProps {
 
 const TABS: { id: DashboardTab; label: string; icon: typeof BarChart3 }[] = [
   { id: 'monthly', label: 'Aylık Bakış', icon: BarChart3 },
+  { id: 'comparison', label: 'Önceki Ay Karşılaştırma', icon: BarChartHorizontalBig },
   { id: 'cohort', label: 'Cohort Analizi', icon: Grid3X3 },
   { id: 'top-firms', label: 'Top 15 Firma', icon: Trophy },
-  { id: 'targets', label: 'Hedef Takip', icon: Target },
+  { id: 'realized-targets', label: 'Gerçekleşen Hedef', icon: Target },
+  { id: 'x-month-target', label: 'Bir Sonraki Ay Hedef', icon: Flag },
   { id: 'team', label: 'Ekip Performans', icon: Users },
 ]
 

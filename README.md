@@ -34,6 +34,8 @@ Zorunlu Firebase değişkenleri:
 - `VITE_FIREBASE_STORAGE_BUCKET`
 - `VITE_FIREBASE_MESSAGING_SENDER_ID`
 - `VITE_FIREBASE_APP_ID`
+- `VITE_FIREBASE_MEASUREMENT_ID` (opsiyonel, Analytics için)
+- `VITE_FIREBASE_ADMIN_EMAILS`
 
 AES-256 şifreleme:
 
@@ -41,11 +43,17 @@ AES-256 şifreleme:
 
 ## Veri Mimarisi
 
+- Uygulama akışı `remote-first` çalışır:
+  - Önce Firestore dönem dokümanı okunur.
+  - Yoksa seed üretilir ve cloud'a yazılır.
+  - İlk geçişte local dönemler tek sefer cloud'a taşınır.
 - Dashboard verisi period bazında tutulur: `dashboard_periods/{YYYY-MM}`
 - Temsilci başarı verileri alt koleksiyondadır:
   `dashboard_periods/{YYYY-MM}/representatives/{representativeId}`
 - Temsilci görselleri Firebase Storage altında saklanır:
-  `representative-images/{YYYY-MM}/...`
+  `representative-images/{representativeId}/{YYYY-MM}.ext`
+- Dönem dokümanı metadata alanları:
+  `periodKey`, `year`, `month`, `previousPeriodKey`, `schemaVersion`, `createdAt`, `updatedAt`
 
 ## Maliyet Odaklı Sorgu Yapısı
 
@@ -57,9 +65,10 @@ AES-256 şifreleme:
 ## Güvenlik
 
 - Uygulama tarafında AES-256-GCM ile veri şifreleme desteği var.
+- Firebase Auth tarafında Email/Password girişi beklenir.
+- Admin erişimi yalnızca `VITE_FIREBASE_ADMIN_EMAILS` içinde tanımlı e-posta hesaplarına açıktır.
 - Örnek Firestore ve Storage rules dosyaları:
   - `firestore.rules`
   - `storage.rules`
 
-Not: Bu rules dosyaları admin claim (`request.auth.token.admin`) varsayımıyla hazırlandı.
-Projede authentication/claim atama tarafını da aktif etmeniz gerekir.
+Not: Firestore ve Storage rules değişikliklerinden sonra ilgili rule dosyalarını Firebase projesine deploy etmeniz gerekir.

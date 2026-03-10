@@ -1,4 +1,4 @@
-export type TargetStatus = 'live' | 'pending' | 'lost'
+export type TargetStatus = 'live' | 'not-live'
 
 export interface TargetBrand {
   name: string

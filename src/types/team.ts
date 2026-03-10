@@ -11,6 +11,7 @@ export interface RepresentativeSuccessRecord {
   liveTarget: number
   auditScore: number
   npsScore: number
+  avgGoLiveDurationDays: number
   meetingScore: number
   imageUrl?: string
 }

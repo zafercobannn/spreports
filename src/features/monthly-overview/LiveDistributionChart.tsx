@@ -1,5 +1,5 @@
 import { ChartContainer } from '@/components/charts/ChartContainer'
-import { ResponsiveLine, type LineSeries } from '@nivo/line'
+import { ResponsiveBar } from '@nivo/bar'
 import { dashboardChartTheme } from '@/components/charts/chart-theme'
 import type { MonthlyGPV } from '@/types/gpv'
 
@@ -8,25 +8,31 @@ interface LiveDistributionChartProps {
 }
 
 export function LiveDistributionChart({ data }: LiveDistributionChartProps) {
-  const chartData: LineSeries = {
-    id: 'Live Dağılımı',
-    data: [
-      { x: 'Toplam Live', y: data.monthlyLiveCount },
-      { x: 'SP', y: data.totalSP },
-      { x: 'Premium Onboarding', y: data.premiumOnboardingLiveCount },
-    ],
-  }
+  const liveSpCount = Math.max(0, data.liveSPCount)
+  const chartData = [
+    { kategori: 'Toplam Live', adet: data.monthlyLiveCount },
+    { kategori: 'Canlı SP', adet: liveSpCount },
+    { kategori: 'Premium Onboarding', adet: data.premiumOnboardingLiveCount },
+  ]
 
-  const maxValue = Math.max(...chartData.data.map((item) => Number(item.y) || 0), 10)
+  const maxValue = Math.max(...chartData.map((item) => Number(item.adet) || 0), 10)
   const yMax = Math.ceil(maxValue * 1.1)
 
   return (
     <ChartContainer title="Live Dağılımı" height={320}>
-      <ResponsiveLine
-        data={[chartData]}
+      <ResponsiveBar
+        data={chartData}
+        keys={['adet']}
+        indexBy="kategori"
         margin={{ top: 16, right: 24, bottom: 56, left: 64 }}
-        xScale={{ type: 'point' }}
-        yScale={{ type: 'linear', min: 0, max: yMax, stacked: false, reverse: false }}
+        padding={0.35}
+        valueScale={{ type: 'linear', min: 0, max: yMax }}
+        colors={['#f28a74']}
+        borderRadius={6}
+        enableLabel
+        labelSkipWidth={16}
+        labelSkipHeight={16}
+        labelTextColor="#2a3f47"
         axisTop={null}
         axisRight={null}
         axisBottom={{
@@ -38,32 +44,7 @@ export function LiveDistributionChart({ data }: LiveDistributionChartProps) {
           tickPadding: 10,
           format: (value) => Number(value).toLocaleString('tr-TR'),
         }}
-        enableGridX={false}
-        enableGridY
-        curve="linear"
-        lineWidth={2}
-        colors={['#f28a74']}
-        pointSize={7}
-        pointColor="#ffffff"
-        pointBorderWidth={2}
-        pointBorderColor="#f28a74"
-        enablePointLabel
-        pointLabel="data.yFormatted"
-        pointLabelYOffset={-12}
-        yFormat=" >-.0f"
-        enableArea={false}
-        enableSlices={false}
-        useMesh
-        theme={{
-          ...dashboardChartTheme,
-          labels: {
-            text: {
-              fontSize: 12,
-              fontWeight: 700,
-              fill: '#2a3f47',
-            },
-          },
-        }}
+        theme={dashboardChartTheme}
         animate
         motionConfig="gentle"
       />

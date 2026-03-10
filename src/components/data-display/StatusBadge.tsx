@@ -1,15 +1,14 @@
 import { Badge } from '@/components/ui/badge'
-import { Check, Clock, X } from 'lucide-react'
+import { Check, X } from 'lucide-react'
 import type { TargetStatus } from '@/types/targets'
 
 interface StatusBadgeProps {
   status: TargetStatus
 }
 
-const STATUS_CONFIG: Record<TargetStatus, { label: string; variant: 'success' | 'warning' | 'destructive'; icon: typeof Check }> = {
+const STATUS_CONFIG: Record<TargetStatus, { label: string; variant: 'success' | 'destructive'; icon: typeof Check }> = {
   live: { label: 'Canlıda', variant: 'success', icon: Check },
-  pending: { label: 'Bekleniyor', variant: 'warning', icon: Clock },
-  lost: { label: 'Kaybedildi', variant: 'destructive', icon: X },
+  'not-live': { label: 'Canlı Değil', variant: 'destructive', icon: X },
 }
 
 export function StatusBadge({ status }: StatusBadgeProps) {

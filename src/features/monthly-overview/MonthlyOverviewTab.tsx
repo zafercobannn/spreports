@@ -20,7 +20,16 @@ export function MonthlyOverviewTab() {
           <LiveDistributionChart data={data} />
         </PageSection>
         <PageSection title="Önceki Platformlar">
-          <PreviousPlatformChart data={data.previousPlatforms} />
+          <div className="grid grid-cols-1 gap-4 2xl:grid-cols-2">
+            <PreviousPlatformChart
+              title="SP Önceki Platform Dağılımı"
+              data={data.previousPlatformsSP}
+            />
+            <PreviousPlatformChart
+              title="Premium Onboarding Önceki Platform Dağılımı"
+              data={data.previousPlatformsPremiumOnboarding}
+            />
+          </div>
         </PageSection>
       </div>
     </div>

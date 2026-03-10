@@ -1,13 +1,16 @@
 import { Link } from 'react-router-dom'
-import { Presentation, Settings, Zap } from 'lucide-react'
+import { LogOut, Presentation, Settings, Zap } from 'lucide-react'
+import { Badge } from '@/components/ui/badge'
 import { Button } from '@/components/ui/button'
 import { FilterBar } from '@/components/filters/FilterBar'
 
 interface DashboardHeaderProps {
   onPresentationMode: (mode: 'slideshow' | 'narrator') => void
+  userEmail?: string
+  onSignOut?: () => void
 }
 
-export function DashboardHeader({ onPresentationMode }: DashboardHeaderProps) {
+export function DashboardHeader({ onPresentationMode, userEmail, onSignOut }: DashboardHeaderProps) {
   return (
     <header className="mb-7 space-y-4">
       <div className="fade-up rounded-2xl border border-white/80 bg-white/70 p-4 shadow-[0_14px_38px_-30px_rgba(23,48,57,0.7)] backdrop-blur-sm sm:p-5">
@@ -22,13 +25,24 @@ export function DashboardHeader({ onPresentationMode }: DashboardHeaderProps) {
             </div>
           </div>
 
-          <div className="flex items-center gap-2">
+          <div className="flex flex-wrap items-center gap-2">
+            {userEmail && (
+              <Badge variant="outline" className="max-w-full truncate px-3 py-1 text-[11px] tracking-[0.14em] uppercase">
+                {userEmail}
+              </Badge>
+            )}
             <Link to="/admin">
               <Button variant="outline" size="sm">
                 <Settings className="mr-2 h-4 w-4" />
                 Admin
               </Button>
             </Link>
+            {onSignOut && (
+              <Button variant="ghost" size="sm" onClick={onSignOut}>
+                <LogOut className="mr-2 h-4 w-4" />
+                Çıkış
+              </Button>
+            )}
             <Button
               variant="default"
               size="sm"

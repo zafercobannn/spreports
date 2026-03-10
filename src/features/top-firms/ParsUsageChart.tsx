@@ -3,26 +3,26 @@ import { PieChart } from '@/components/charts/PieChart'
 import type { TopFirm } from '@/types/firms'
 import { formatNumber, formatPercent } from '@/utils/format'
 
-interface ShippingUsageChartProps {
+interface ParsUsageChartProps {
   data: TopFirm[]
 }
 
-export function ShippingUsageChart({ data }: ShippingUsageChartProps) {
+export function ParsUsageChart({ data }: ParsUsageChartProps) {
+  const usingPars = data.filter((f) => f.usesPars).length
   const totalFirmCount = data.length
-  const usingIkas = data.filter((firm) => firm.ikasCargoValue > 0).length
-  const notUsingIkas = Math.max(0, totalFirmCount - usingIkas)
+  const notUsingPars = Math.max(0, totalFirmCount - usingPars)
   const hasData = totalFirmCount > 0
 
   const chartData = hasData
     ? [
-        { id: 'Kullanan', label: 'Kullanan', value: usingIkas },
-        { id: 'Kullanmayan', label: 'Kullanmayan', value: notUsingIkas },
+        { id: 'PARS Kullanan', label: 'Kullanan', value: usingPars },
+        { id: 'PARS Kullanmayan', label: 'Kullanmayan', value: notUsingPars },
       ]
     : [{ id: 'Veri Yok', label: 'Veri Yok', value: 1 }]
 
   return (
     <ChartContainer
-      title="ikas Kargo Kullanım Oranı"
+      title="PARS Kullanım Oranı"
       subtitle="Top 15 firma bazında kullanan/kullanmayan yüzdesi"
       height={280}
     >
@@ -30,7 +30,7 @@ export function ShippingUsageChart({ data }: ShippingUsageChartProps) {
         <div className="min-h-0 flex-1">
           <PieChart
             data={chartData}
-            colors={hasData ? ['#0f766e', '#f59e0b'] : ['#9aa7ad']}
+            colors={hasData ? ['#2563eb', '#f43f5e'] : ['#9aa7ad']}
             enableArcLabels={false}
             enableArcLinkLabels={false}
             tooltip={({ datum }) => {
@@ -59,20 +59,20 @@ export function ShippingUsageChart({ data }: ShippingUsageChartProps) {
           <div className="grid grid-cols-1 gap-1.5 border-t border-border/60 pt-2 text-xs">
             <div className="flex items-center justify-between">
               <div className="flex items-center gap-2">
-                <span className="h-2.5 w-2.5 rounded-full bg-[#0f766e]" />
+                <span className="h-2.5 w-2.5 rounded-full bg-[#2563eb]" />
                 <span className="text-muted-foreground">Kullanan</span>
               </div>
               <span className="font-semibold text-foreground">
-                {formatNumber(usingIkas)} firma ({formatPercent((usingIkas / totalFirmCount) * 100)})
+                {formatNumber(usingPars)} firma ({formatPercent((usingPars / totalFirmCount) * 100)})
               </span>
             </div>
             <div className="flex items-center justify-between">
               <div className="flex items-center gap-2">
-                <span className="h-2.5 w-2.5 rounded-full bg-[#f59e0b]" />
+                <span className="h-2.5 w-2.5 rounded-full bg-[#f43f5e]" />
                 <span className="text-muted-foreground">Kullanmayan</span>
               </div>
               <span className="font-semibold text-foreground">
-                {formatNumber(notUsingIkas)} firma ({formatPercent((notUsingIkas / totalFirmCount) * 100)})
+                {formatNumber(notUsingPars)} firma ({formatPercent((notUsingPars / totalFirmCount) * 100)})
               </span>
             </div>
           </div>

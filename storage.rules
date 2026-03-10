@@ -6,15 +6,18 @@ service firebase.storage {
     }
 
     function isAdmin() {
-      return isSignedIn() && request.auth.token.admin == true;
+      return isSignedIn()
+        && request.auth.token.email != null
+        && request.auth.token.email in ['hilal.mingin@ikas.com'];
     }
 
-    match /representative-images/{periodKey}/{fileName} {
-      allow read: if isSignedIn();
-      allow write: if isAdmin()
+    match /representative-images/{representativeId}/{fileName} {
+      allow read: if isAdmin();
+      allow create, update: if isAdmin()
         && request.resource != null
         && request.resource.size < 5 * 1024 * 1024
         && request.resource.contentType.matches('image/.*');
+      allow delete: if isAdmin();
     }
   }
 }

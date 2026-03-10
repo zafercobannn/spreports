@@ -13,7 +13,7 @@ interface KPICardProps {
     direction: TrendDirection
     isPositiveGood?: boolean
   }
-  subtitle?: string
+  subtitle?: ReactNode
   className?: string
 }
 
@@ -40,9 +40,9 @@ export function KPICard({
               {label}
             </p>
             <p className="text-2xl font-semibold tracking-tight text-foreground">{value}</p>
-            {subtitle && (
-              <p className="text-xs text-muted-foreground">{subtitle}</p>
-            )}
+            {typeof subtitle === 'string'
+              ? <p className="text-xs text-muted-foreground">{subtitle}</p>
+              : subtitle}
           </div>
           {icon && (
             <div className="rounded-xl border border-white/80 bg-white/70 p-2 text-muted-foreground shadow-[0_10px_20px_-16px_rgba(23,48,57,0.7)]">

@@ -1,7 +1,6 @@
 import { DataTable, type Column } from '@/components/data-display/DataTable'
 import { TrendIndicator } from '@/components/data-display/TrendIndicator'
-import { Badge } from '@/components/ui/badge'
-import { formatCurrency, formatNumber, formatPercent } from '@/utils/format'
+import { formatCurrency, formatNumber } from '@/utils/format'
 import { getTrendDirection } from '@/utils/calculations'
 import type { TopFirm } from '@/types/firms'
 
@@ -60,33 +59,6 @@ export function TopFirmsTable({ data }: TopFirmsTableProps) {
       align: 'right',
       sortable: true,
       render: (row) => formatNumber(row.shipmentSent),
-    },
-    {
-      key: 'ikasCargoValue',
-      header: 'ikas Kargo',
-      align: 'center',
-      sortable: true,
-      render: (row) => (
-        row.ikasCargoValue > 0 ? (
-          <Badge variant="success">Kullanıyor</Badge>
-        ) : (
-          <Badge variant="destructive">Kullanmıyor</Badge>
-        )
-      ),
-    },
-    {
-      key: 'parsUsageRate',
-      header: 'PARS',
-      render: (row) => (
-        <div className="flex flex-wrap gap-1">
-          <Badge variant={row.parsUsageRate >= 60 ? 'success' : row.parsUsageRate >= 45 ? 'warning' : 'destructive'}>
-            Kullanan {formatPercent(row.parsUsageRate)}
-          </Badge>
-          <Badge variant="outline">
-            Kullanmayan {formatPercent(100 - row.parsUsageRate)}
-          </Badge>
-        </div>
-      ),
     },
   ]
 

@@ -1,18 +1,20 @@
 import { useEffect, useMemo, useState } from 'react'
 import { Link } from 'react-router-dom'
-import { ArrowLeft, Plus, RotateCcw, Trash2 } from 'lucide-react'
+import { ArrowLeft, LogOut, Plus, RotateCcw, Trash2, Upload } from 'lucide-react'
 import { Button } from '@/components/ui/button'
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from '@/components/ui/card'
 import { Badge } from '@/components/ui/badge'
+import { useAdminAuth } from '@/features/auth/AdminAuthProvider'
+import { AdminLoginExperience } from '@/features/auth/AdminLoginExperience'
 import { CohortHeatmapEditor } from '@/features/cohort/CohortHeatmapEditor'
 import { RepresentativeSuccessAdmin } from '@/features/team-performance/RepresentativeSuccessAdmin'
 import { useFilters } from '@/hooks/use-filters'
 import { getPeriodKey, useDashboardDataStore } from '@/stores/dashboard-data-store'
-import type { CohortMatrix } from '@/types/cohort'
 import type { DashboardPeriodData } from '@/types/dashboard-data'
 import type { TargetStatus } from '@/types/targets'
 import { TURKISH_MONTHS, getMonthName } from '@/utils/date-utils'
-import { calculateGpvChangePercent, calculateParsUsageRatePercent } from '@/utils/top-firm-metrics'
+import { calculateGpvChangePercent } from '@/utils/top-firm-metrics'
+import { parsePlatformExcelRows, parseTopFirmsExcelRows, readExcelRows } from '@/utils/excel-import'
 
 const inputClassName =
   'h-9 w-full min-w-0 rounded-lg border border-border/80 bg-white/90 px-3 text-sm text-foreground outline-none transition focus:border-primary/60 focus:ring-2 focus:ring-primary/20'
@@ -26,18 +28,13 @@ function toNumber(value: string): number {
   return Number.isFinite(parsed) ? parsed : 0
 }
 
-function isCohortMatrix(value: unknown): value is CohortMatrix {
-  if (!value || typeof value !== 'object') return false
-  const v = value as Record<string, unknown>
-  return Array.isArray(v.months) && Array.isArray(v.rows)
-}
-
-export function AdminPage() {
+function AdminWorkspace() {
+  const { signOut, userEmail } = useAdminAuth()
   const { year: currentYear, month: currentMonth } = useFilters()
   const [editYear, setEditYear] = useState(currentYear)
   const [editMonth, setEditMonth] = useState(currentMonth)
-  const [cohortDraftMap, setCohortDraftMap] = useState<Record<string, string>>({})
-  const [cohortError, setCohortError] = useState<string | null>(null)
+  const [importInfo, setImportInfo] = useState<string | null>(null)
+  const [importError, setImportError] = useState<string | null>(null)
 
   const periodKey = useMemo(() => getPeriodKey(editYear, editMonth), [editYear, editMonth])
 
@@ -55,9 +52,49 @@ export function AdminPage() {
     updatePeriodData(editYear, editMonth, updater)
   }
 
-  if (!periodData) return null
+  const handlePlatformImport = async (file: File | null, mode: 'sp' | 'premium') => {
+    if (!file) return
+    setImportInfo(null)
+    setImportError(null)
 
-  const cohortDraft = cohortDraftMap[periodKey] ?? JSON.stringify(periodData.cohort, null, 2)
+    try {
+      const rows = await readExcelRows(file)
+      const platforms = parsePlatformExcelRows(rows)
+      patchPeriod((data) => ({
+        ...data,
+        monthlyGPV: {
+          ...data.monthlyGPV,
+          previousPlatformsSP: mode === 'sp' ? platforms : data.monthlyGPV.previousPlatformsSP,
+          previousPlatformsPremiumOnboarding: mode === 'premium'
+            ? platforms
+            : data.monthlyGPV.previousPlatformsPremiumOnboarding,
+        },
+      }))
+      setImportInfo(`${mode === 'sp' ? 'SP' : 'Premium Onboarding'} platform verisi yüklendi (${platforms.length} satır).`)
+    } catch (error) {
+      setImportError(error instanceof Error ? error.message : 'Platform Excel dosyası yüklenemedi.')
+    }
+  }
+
+  const handleTopFirmsImport = async (file: File | null) => {
+    if (!file) return
+    setImportInfo(null)
+    setImportError(null)
+
+    try {
+      const rows = await readExcelRows(file)
+      const firms = parseTopFirmsExcelRows(rows)
+      patchPeriod((data) => ({
+        ...data,
+        topFirms: firms,
+      }))
+      setImportInfo(`Top 15 Excel verisi yüklendi (${firms.length} firma).`)
+    } catch (error) {
+      setImportError(error instanceof Error ? error.message : 'Top 15 Excel dosyası yüklenemedi.')
+    }
+  }
+
+  if (!periodData) return null
 
   return (
     <div className="min-h-screen bg-background px-4 py-6 sm:px-6 lg:px-8">
@@ -68,16 +105,27 @@ export function AdminPage() {
               <div>
                 <CardTitle className="text-xl">Admin Paneli</CardTitle>
                 <CardDescription>
-                  Tüm veriler manuel düzenlenir ve tarayıcıda otomatik saklanır.
+                  Tüm veriler manuel düzenlenir, Firebase remote-first mimaride saklanır.
                 </CardDescription>
               </div>
               <div className="flex flex-wrap items-center gap-2">
+                {userEmail && <Badge variant="outline">{userEmail}</Badge>}
                 <Link to="/dashboard">
                   <Button variant="outline" size="sm">
                     <ArrowLeft className="mr-2 h-4 w-4" />
                     Dashboard
                   </Button>
                 </Link>
+                <Button
+                  variant="ghost"
+                  size="sm"
+                  onClick={() => {
+                    void signOut()
+                  }}
+                >
+                  <LogOut className="mr-2 h-4 w-4" />
+                  Çıkış
+                </Button>
                 <Button
                   variant="outline"
                   size="sm"
@@ -103,7 +151,6 @@ export function AdminPage() {
                   value={editYear}
                   onChange={(e) => {
                     setEditYear(Math.max(2020, toNumber(e.target.value)))
-                    setCohortError(null)
                   }}
                 />
               </div>
@@ -116,7 +163,6 @@ export function AdminPage() {
                   value={editMonth}
                   onChange={(e) => {
                     setEditMonth(Number(e.target.value))
-                    setCohortError(null)
                   }}
                 >
                   {TURKISH_MONTHS.map((name, idx) => (
@@ -131,12 +177,21 @@ export function AdminPage() {
           </CardHeader>
         </Card>
 
+        {(importInfo || importError) && (
+          <Card>
+            <CardContent className="pt-6">
+              {importInfo && <p className="text-sm font-medium text-emerald-700">{importInfo}</p>}
+              {importError && <p className="text-sm font-medium text-destructive">{importError}</p>}
+            </CardContent>
+          </Card>
+        )}
+
         <Card>
           <CardHeader>
             <CardTitle>Aylık Genel Veriler</CardTitle>
             <CardDescription>Dashboard üst metrikleri</CardDescription>
           </CardHeader>
-          <CardContent className="space-y-4">
+          <CardContent className="space-y-6">
             <div className="grid grid-cols-1 gap-3 md:grid-cols-2 lg:grid-cols-3">
               <label className="space-y-1">
                 <span className="text-xs text-muted-foreground">GPV</span>
@@ -195,18 +250,27 @@ export function AdminPage() {
                 />
               </label>
               <label className="space-y-1">
-                <span className="text-xs text-muted-foreground">Aylık Live Sayısı</span>
+                <span className="text-xs text-muted-foreground">Canlı SP (en az 1 ödeme)</span>
                 <input
                   type="number"
                   className={inputClassName}
-                  value={periodData.monthlyGPV.monthlyLiveCount}
+                  value={periodData.monthlyGPV.liveSPCount}
                   onChange={(e) =>
                     patchPeriod((data) => ({
                       ...data,
-                      monthlyGPV: { ...data.monthlyGPV, monthlyLiveCount: toNumber(e.target.value) },
+                      monthlyGPV: { ...data.monthlyGPV, liveSPCount: toNumber(e.target.value) },
                     }))
                   }
                 />
+              </label>
+              <label className="space-y-1">
+                <span className="text-xs text-muted-foreground">Aylık Live Sayısı (otomatik)</span>
+                <div className="flex h-9 items-center rounded-lg border border-border/80 bg-muted/25 px-3 text-sm font-medium text-foreground">
+                  {periodData.monthlyGPV.monthlyLiveCount}
+                  <span className="ml-2 text-xs text-muted-foreground">
+                    = Canlı SP + Premium Onboarding Live
+                  </span>
+                </div>
               </label>
               <label className="space-y-1">
                 <span className="text-xs text-muted-foreground">Toplam SP</span>
@@ -223,7 +287,7 @@ export function AdminPage() {
                 />
               </label>
               <label className="space-y-1">
-                <span className="text-xs text-muted-foreground">Premium Onboarding</span>
+                <span className="text-xs text-muted-foreground">Premium Onboarding Live Sayısı</span>
                 <input
                   type="number"
                   className={inputClassName}
@@ -240,18 +304,36 @@ export function AdminPage() {
                 />
               </label>
               <label className="space-y-1">
-                <span className="text-xs text-muted-foreground">Ort. Canlıya Alma (gün)</span>
+                <span className="text-xs text-muted-foreground">Premium Onboarding Ort. Canlıya Alma (gün)</span>
                 <input
                   type="number"
                   step="0.1"
                   className={inputClassName}
-                  value={periodData.monthlyGPV.avgGoLiveDurationDays}
+                  value={periodData.monthlyGPV.premiumOnboardingAvgGoLiveDurationDays}
                   onChange={(e) =>
                     patchPeriod((data) => ({
                       ...data,
                       monthlyGPV: {
                         ...data.monthlyGPV,
-                        avgGoLiveDurationDays: toNumber(e.target.value),
+                        premiumOnboardingAvgGoLiveDurationDays: toNumber(e.target.value),
+                      },
+                    }))
+                  }
+                />
+              </label>
+              <label className="space-y-1">
+                <span className="text-xs text-muted-foreground">Scale Plus Ort. Canlıya Alma (gün)</span>
+                <input
+                  type="number"
+                  step="0.1"
+                  className={inputClassName}
+                  value={periodData.monthlyGPV.scalePlusAvgGoLiveDurationDays}
+                  onChange={(e) =>
+                    patchPeriod((data) => ({
+                      ...data,
+                      monthlyGPV: {
+                        ...data.monthlyGPV,
+                        scalePlusAvgGoLiveDurationDays: toNumber(e.target.value),
                       },
                     }))
                   }
@@ -259,78 +341,193 @@ export function AdminPage() {
               </label>
             </div>
 
-            <div className="space-y-2">
-              <div className="flex items-center justify-between">
-                <h3 className="text-sm font-semibold">Önceki Platformlar</h3>
-                <Button
-                  size="sm"
-                  variant="outline"
-                  onClick={() =>
-                    patchPeriod((data) => ({
-                      ...data,
-                      monthlyGPV: {
-                        ...data.monthlyGPV,
-                        previousPlatforms: [...data.monthlyGPV.previousPlatforms, { name: '', count: 0 }],
-                      },
-                    }))
-                  }
-                >
-                  <Plus className="mr-1 h-3.5 w-3.5" />
-                  Platform Ekle
-                </Button>
-              </div>
+            <div className="grid grid-cols-1 gap-6 xl:grid-cols-2">
               <div className="space-y-2">
-                {periodData.monthlyGPV.previousPlatforms.map((platform, idx) => (
-                  <div key={idx} className="grid grid-cols-[minmax(0,1fr)_minmax(0,160px)_40px] items-center gap-2">
-                    <input
-                      className={inputClassName}
-                      value={platform.name}
-                      onChange={(e) =>
-                        patchPeriod((data) => ({
-                          ...data,
-                          monthlyGPV: {
-                            ...data.monthlyGPV,
-                            previousPlatforms: data.monthlyGPV.previousPlatforms.map((p, pIdx) =>
-                              pIdx === idx ? { ...p, name: e.target.value } : p
-                            ),
-                          },
-                        }))
-                      }
-                      placeholder="Platform adı"
-                    />
-                    <input
-                      type="number"
-                      className={inputClassName}
-                      value={platform.count}
-                      onChange={(e) =>
-                        patchPeriod((data) => ({
-                          ...data,
-                          monthlyGPV: {
-                            ...data.monthlyGPV,
-                            previousPlatforms: data.monthlyGPV.previousPlatforms.map((p, pIdx) =>
-                              pIdx === idx ? { ...p, count: toNumber(e.target.value) } : p
-                            ),
-                          },
-                        }))
-                      }
-                    />
+                <div className="flex flex-wrap items-center justify-between gap-2">
+                  <h3 className="text-sm font-semibold">SP Önceki Platformlar</h3>
+                  <div className="flex items-center gap-2">
+                    <label className="inline-flex cursor-pointer items-center gap-1 rounded-md border border-border/80 bg-white px-3 py-1.5 text-xs font-medium text-foreground hover:bg-muted/35">
+                      <Upload className="h-3.5 w-3.5" />
+                      Excel Import
+                      <input
+                        type="file"
+                        accept=".xlsx,.xls"
+                        className="hidden"
+                        onChange={(e) => {
+                          void handlePlatformImport(e.target.files?.[0] ?? null, 'sp')
+                          e.currentTarget.value = ''
+                        }}
+                      />
+                    </label>
                     <Button
+                      size="sm"
                       variant="outline"
-                      size="icon"
                       onClick={() =>
                         patchPeriod((data) => ({
                           ...data,
                           monthlyGPV: {
                             ...data.monthlyGPV,
-                            previousPlatforms: data.monthlyGPV.previousPlatforms.filter((_, pIdx) => pIdx !== idx),
+                            previousPlatformsSP: [
+                              ...data.monthlyGPV.previousPlatformsSP,
+                              { name: '', count: 0 },
+                            ],
                           },
                         }))
                       }
                     >
-                      <Trash2 className="h-4 w-4" />
+                      <Plus className="mr-1 h-3.5 w-3.5" />
+                      Platform Ekle
                     </Button>
                   </div>
-                ))}
+                </div>
+                <div className="space-y-2">
+                  {periodData.monthlyGPV.previousPlatformsSP.map((platform, idx) => (
+                    <div key={idx} className="grid grid-cols-[minmax(0,1fr)_minmax(0,160px)_40px] items-center gap-2">
+                      <input
+                        className={inputClassName}
+                        value={platform.name}
+                        onChange={(e) =>
+                          patchPeriod((data) => ({
+                            ...data,
+                            monthlyGPV: {
+                              ...data.monthlyGPV,
+                              previousPlatformsSP: data.monthlyGPV.previousPlatformsSP.map((p, pIdx) =>
+                                pIdx === idx ? { ...p, name: e.target.value } : p
+                              ),
+                            },
+                          }))
+                        }
+                        placeholder="Altyapı adı"
+                      />
+                      <input
+                        type="number"
+                        className={inputClassName}
+                        value={platform.count}
+                        onChange={(e) =>
+                          patchPeriod((data) => ({
+                            ...data,
+                            monthlyGPV: {
+                              ...data.monthlyGPV,
+                              previousPlatformsSP: data.monthlyGPV.previousPlatformsSP.map((p, pIdx) =>
+                                pIdx === idx ? { ...p, count: toNumber(e.target.value) } : p
+                              ),
+                            },
+                          }))
+                        }
+                        placeholder="Adet"
+                      />
+                      <Button
+                        variant="outline"
+                        size="icon"
+                        onClick={() =>
+                          patchPeriod((data) => ({
+                            ...data,
+                            monthlyGPV: {
+                              ...data.monthlyGPV,
+                              previousPlatformsSP: data.monthlyGPV.previousPlatformsSP.filter((_, pIdx) => pIdx !== idx),
+                            },
+                          }))
+                        }
+                      >
+                        <Trash2 className="h-4 w-4" />
+                      </Button>
+                    </div>
+                  ))}
+                </div>
+              </div>
+
+              <div className="space-y-2">
+                <div className="flex flex-wrap items-center justify-between gap-2">
+                  <h3 className="text-sm font-semibold">Premium Onboarding Önceki Platformlar</h3>
+                  <div className="flex items-center gap-2">
+                    <label className="inline-flex cursor-pointer items-center gap-1 rounded-md border border-border/80 bg-white px-3 py-1.5 text-xs font-medium text-foreground hover:bg-muted/35">
+                      <Upload className="h-3.5 w-3.5" />
+                      Excel Import
+                      <input
+                        type="file"
+                        accept=".xlsx,.xls"
+                        className="hidden"
+                        onChange={(e) => {
+                          void handlePlatformImport(e.target.files?.[0] ?? null, 'premium')
+                          e.currentTarget.value = ''
+                        }}
+                      />
+                    </label>
+                    <Button
+                      size="sm"
+                      variant="outline"
+                      onClick={() =>
+                        patchPeriod((data) => ({
+                          ...data,
+                          monthlyGPV: {
+                            ...data.monthlyGPV,
+                            previousPlatformsPremiumOnboarding: [
+                              ...data.monthlyGPV.previousPlatformsPremiumOnboarding,
+                              { name: '', count: 0 },
+                            ],
+                          },
+                        }))
+                      }
+                    >
+                      <Plus className="mr-1 h-3.5 w-3.5" />
+                      Platform Ekle
+                    </Button>
+                  </div>
+                </div>
+                <div className="space-y-2">
+                  {periodData.monthlyGPV.previousPlatformsPremiumOnboarding.map((platform, idx) => (
+                    <div key={idx} className="grid grid-cols-[minmax(0,1fr)_minmax(0,160px)_40px] items-center gap-2">
+                      <input
+                        className={inputClassName}
+                        value={platform.name}
+                        onChange={(e) =>
+                          patchPeriod((data) => ({
+                            ...data,
+                            monthlyGPV: {
+                              ...data.monthlyGPV,
+                              previousPlatformsPremiumOnboarding: data.monthlyGPV.previousPlatformsPremiumOnboarding.map((p, pIdx) =>
+                                pIdx === idx ? { ...p, name: e.target.value } : p
+                              ),
+                            },
+                          }))
+                        }
+                        placeholder="Altyapı adı"
+                      />
+                      <input
+                        type="number"
+                        className={inputClassName}
+                        value={platform.count}
+                        onChange={(e) =>
+                          patchPeriod((data) => ({
+                            ...data,
+                            monthlyGPV: {
+                              ...data.monthlyGPV,
+                              previousPlatformsPremiumOnboarding: data.monthlyGPV.previousPlatformsPremiumOnboarding.map((p, pIdx) =>
+                                pIdx === idx ? { ...p, count: toNumber(e.target.value) } : p
+                              ),
+                            },
+                          }))
+                        }
+                        placeholder="Adet"
+                      />
+                      <Button
+                        variant="outline"
+                        size="icon"
+                        onClick={() =>
+                          patchPeriod((data) => ({
+                            ...data,
+                            monthlyGPV: {
+                              ...data.monthlyGPV,
+                              previousPlatformsPremiumOnboarding: data.monthlyGPV.previousPlatformsPremiumOnboarding.filter((_, pIdx) => pIdx !== idx),
+                            },
+                          }))
+                        }
+                      >
+                        <Trash2 className="h-4 w-4" />
+                      </Button>
+                    </div>
+                  ))}
+                </div>
               </div>
             </div>
           </CardContent>
@@ -339,9 +536,24 @@ export function AdminPage() {
         <Card>
           <CardHeader>
             <CardTitle>Top Firmalar</CardTitle>
-            <CardDescription>PARS kullanan/kullanmayan oranı dahil</CardDescription>
+            <CardDescription>Top 15 tablosu - Excel import destekli</CardDescription>
           </CardHeader>
           <CardContent className="space-y-3">
+            <div className="flex flex-wrap items-center gap-2">
+              <label className="inline-flex cursor-pointer items-center gap-1 rounded-md border border-border/80 bg-white px-3 py-1.5 text-xs font-medium text-foreground hover:bg-muted/35">
+                <Upload className="h-3.5 w-3.5" />
+                Top 15 Excel Import
+                <input
+                  type="file"
+                  accept=".xlsx,.xls"
+                  className="hidden"
+                  onChange={(e) => {
+                    void handleTopFirmsImport(e.target.files?.[0] ?? null)
+                    e.currentTarget.value = ''
+                  }}
+                />
+              </label>
+            </div>
             <div className="overflow-x-auto rounded-xl border border-border/70">
               <table className="w-full min-w-[1080px] text-sm">
                 <thead className="bg-muted/60">
@@ -352,17 +564,14 @@ export function AdminPage() {
                     <th className="px-2 py-2 text-left text-xs">Önceki GPV</th>
                     <th className="px-2 py-2 text-left text-xs">Değişim %</th>
                     <th className="px-2 py-2 text-left text-xs">Gönderi</th>
-                    <th className="px-2 py-2 text-left text-xs">ikas Kargo Değeri</th>
-                    <th className="px-2 py-2 text-left text-xs">PARS Kullanım %</th>
-                    <th className="px-2 py-2 text-left text-xs">PARS Kullanmayan %</th>
+                    <th className="px-2 py-2 text-left text-xs">ikas Kargo Paket Adedi</th>
+                    <th className="px-2 py-2 text-left text-xs">PARS Durumu</th>
                     <th className="px-2 py-2 text-left text-xs" />
                   </tr>
                 </thead>
                 <tbody>
                   {periodData.topFirms.map((firm, idx) => {
                     const gpvChange = calculateGpvChangePercent(firm.gpv, firm.previousMonthGPV)
-                    const parsUsageRate = calculateParsUsageRatePercent(firm.shipmentSent, firm.ikasCargoValue)
-                    const nonUsage = Math.max(0, 100 - parsUsageRate)
                     return (
                       <tr key={idx} className="border-t border-border/60">
                         <td className="px-2 py-2 text-xs text-muted-foreground">{idx + 1}</td>
@@ -450,11 +659,24 @@ export function AdminPage() {
                           />
                         </td>
                         <td className="px-2 py-2">
-                          <div className="h-8 rounded-md border border-border/70 bg-muted/35 px-2 text-right text-xs leading-8 font-medium text-foreground">
-                            {parsUsageRate.toFixed(1)}%
-                          </div>
+                          <select
+                            className={smallInputClassName}
+                            value={firm.usesPars ? 'uses' : 'not-uses'}
+                            onChange={(e) =>
+                              patchPeriod((data) => ({
+                                ...data,
+                                topFirms: data.topFirms.map((item, itemIdx) =>
+                                  itemIdx === idx
+                                    ? { ...item, usesPars: e.target.value === 'uses' }
+                                    : item
+                                ),
+                              }))
+                            }
+                          >
+                            <option value="uses">Kullanıyor</option>
+                            <option value="not-uses">Kullanmıyor</option>
+                          </select>
                         </td>
-                        <td className="px-2 py-2 text-xs text-muted-foreground">{nonUsage.toFixed(1)}%</td>
                         <td className="px-2 py-2">
                           <Button
                             variant="outline"
@@ -492,7 +714,7 @@ export function AdminPage() {
                       gpvChange: 0,
                       shipmentSent: 0,
                       ikasCargoValue: 0,
-                      parsUsageRate: 0,
+                      usesPars: false,
                     },
                   ],
                 }))
@@ -502,10 +724,10 @@ export function AdminPage() {
               Firma Ekle
             </Button>
             <p className="text-xs text-muted-foreground">
-              ikas kargo için `0` = kullanmıyor, `0` üstü değer = kullanıyor kabul edilir.
+              ikas kargo alanına o ay gönderilen paket adedini gir.
             </p>
             <p className="text-xs text-muted-foreground">
-              `Değişim %` = `(GPV - Önceki GPV) / Önceki GPV` ve `PARS Kullanım %` = `ikas Kargo Değeri / Gönderi` formülüyle otomatik hesaplanır.
+              Excel zorunlu alanları: `Mağaza`, `GPV`, `Önceki Ay GPV`, `Gönderi`, `ikas Kargo Paket Adedi`, `PARS`.
             </p>
           </CardContent>
         </Card>
@@ -514,7 +736,6 @@ export function AdminPage() {
           data={periodData.representativeSuccess}
           weights={periodData.representativeWeights}
           monthLabel={getMonthName(editMonth)}
-          month={editMonth}
           year={editYear}
           onDataChange={(nextData) =>
             patchPeriod((data) => ({
@@ -530,464 +751,108 @@ export function AdminPage() {
           }
         />
 
-        <div className="grid grid-cols-1 gap-5 2xl:grid-cols-2">
-          <Card>
-            <CardHeader>
-              <CardTitle>Hedef Markalar</CardTitle>
-            </CardHeader>
-            <CardContent className="space-y-2">
-              <div className="hidden xl:grid xl:grid-cols-[minmax(0,1.15fr)_minmax(0,1.1fr)_minmax(0,0.9fr)_minmax(0,0.9fr)_40px] xl:items-center xl:gap-2 xl:px-1">
-                <span className="text-[11px] font-semibold tracking-[0.08em] text-muted-foreground uppercase">Marka</span>
-                <span className="text-[11px] font-semibold tracking-[0.08em] text-muted-foreground uppercase">Sektör</span>
-                <span className="text-[11px] font-semibold tracking-[0.08em] text-muted-foreground uppercase">Tahmini Ciro</span>
-                <span className="text-[11px] font-semibold tracking-[0.08em] text-muted-foreground uppercase">Durum</span>
-                <span />
-              </div>
-              {periodData.targets.map((target, idx) => (
-                <div
-                  key={idx}
-                  className="grid grid-cols-1 items-center gap-2 sm:grid-cols-2 xl:grid-cols-[minmax(0,1.15fr)_minmax(0,1.1fr)_minmax(0,0.9fr)_minmax(0,0.9fr)_40px]"
-                >
-                  <input
-                    className={inputClassName}
-                    value={target.name}
-                    onChange={(e) =>
-                      patchPeriod((data) => ({
-                        ...data,
-                        targets: data.targets.map((item, itemIdx) =>
-                          itemIdx === idx ? { ...item, name: e.target.value } : item
-                        ),
-                      }))
-                    }
-                    placeholder="Marka"
-                  />
-                  <input
-                    className={inputClassName}
-                    value={target.sector}
-                    onChange={(e) =>
-                      patchPeriod((data) => ({
-                        ...data,
-                        targets: data.targets.map((item, itemIdx) =>
-                          itemIdx === idx ? { ...item, sector: e.target.value } : item
-                        ),
-                      }))
-                    }
-                    placeholder="Sektör"
-                  />
-                  <input
-                    type="number"
-                    className={inputClassName}
-                    value={target.estimatedRevenue}
-                    onChange={(e) =>
-                      patchPeriod((data) => ({
-                        ...data,
-                        targets: data.targets.map((item, itemIdx) =>
-                          itemIdx === idx ? { ...item, estimatedRevenue: toNumber(e.target.value) } : item
-                        ),
-                      }))
-                    }
-                    placeholder="Tahmini ciro"
-                  />
-                  <select
-                    className={inputClassName}
-                    value={target.status}
-                    onChange={(e) =>
-                      patchPeriod((data) => ({
-                        ...data,
-                        targets: data.targets.map((item, itemIdx) =>
-                          itemIdx === idx ? { ...item, status: e.target.value as TargetStatus } : item
-                        ),
-                      }))
-                    }
-                  >
-                    <option value="live">Canlıda</option>
-                    <option value="pending">Bekleniyor</option>
-                    <option value="lost">Kaybedildi</option>
-                  </select>
-                  <Button
-                    variant="outline"
-                    size="icon"
-                    onClick={() =>
-                      patchPeriod((data) => ({
-                        ...data,
-                        targets: data.targets.filter((_, itemIdx) => itemIdx !== idx),
-                      }))
-                    }
-                  >
-                    <Trash2 className="h-4 w-4" />
-                  </Button>
-                </div>
-              ))}
-
-              <Button
-                size="sm"
-                variant="outline"
-                onClick={() =>
-                  patchPeriod((data) => ({
-                    ...data,
-                    targets: [...data.targets, { name: '', sector: '', estimatedRevenue: 0, status: 'pending' }],
-                  }))
-                }
+        <Card>
+          <CardHeader>
+            <CardTitle>Hedef Markalar</CardTitle>
+          </CardHeader>
+          <CardContent className="space-y-2">
+            <div className="hidden xl:grid xl:grid-cols-[minmax(0,1.15fr)_minmax(0,1.1fr)_minmax(0,0.9fr)_minmax(0,0.9fr)_40px] xl:items-center xl:gap-2 xl:px-1">
+              <span className="text-[11px] font-semibold tracking-[0.08em] text-muted-foreground uppercase">Marka</span>
+              <span className="text-[11px] font-semibold tracking-[0.08em] text-muted-foreground uppercase">Sektör</span>
+              <span className="text-[11px] font-semibold tracking-[0.08em] text-muted-foreground uppercase">Tahmini Ciro</span>
+              <span className="text-[11px] font-semibold tracking-[0.08em] text-muted-foreground uppercase">Durum</span>
+              <span />
+            </div>
+            {periodData.targets.map((target, idx) => (
+              <div
+                key={idx}
+                className="grid grid-cols-1 items-center gap-2 sm:grid-cols-2 xl:grid-cols-[minmax(0,1.15fr)_minmax(0,1.1fr)_minmax(0,0.9fr)_minmax(0,0.9fr)_40px]"
               >
-                <Plus className="mr-1 h-3.5 w-3.5" />
-                Marka Ekle
-              </Button>
-            </CardContent>
-          </Card>
-
-          <Card>
-            <CardHeader>
-              <CardTitle>Ekip Performansı</CardTitle>
-            </CardHeader>
-            <CardContent className="space-y-2">
-              <div className="hidden xl:grid xl:grid-cols-[minmax(0,1.25fr)_minmax(0,0.7fr)_minmax(0,0.7fr)_minmax(0,0.7fr)_minmax(0,0.7fr)_40px] xl:items-center xl:gap-2 xl:px-1">
-                <span className="text-[11px] font-semibold tracking-[0.08em] text-muted-foreground uppercase">SP</span>
-                <span className="text-[11px] font-semibold tracking-[0.08em] text-muted-foreground uppercase">Atanan</span>
-                <span className="text-[11px] font-semibold tracking-[0.08em] text-muted-foreground uppercase">Tamamlanan</span>
-                <span className="text-[11px] font-semibold tracking-[0.08em] text-muted-foreground uppercase">Süre (gün)</span>
-                <span className="text-[11px] font-semibold tracking-[0.08em] text-muted-foreground uppercase">Başarı</span>
-                <span />
-              </div>
-              {periodData.teamPerformance.map((member, idx) => (
-                <div
-                  key={idx}
-                  className="grid grid-cols-1 items-center gap-2 sm:grid-cols-2 xl:grid-cols-[minmax(0,1.25fr)_minmax(0,0.7fr)_minmax(0,0.7fr)_minmax(0,0.7fr)_minmax(0,0.7fr)_40px]"
-                >
-                  <input
-                    className={inputClassName}
-                    value={member.member.name}
-                    onChange={(e) =>
-                      patchPeriod((data) => ({
-                        ...data,
-                        teamPerformance: data.teamPerformance.map((item, itemIdx) =>
-                          itemIdx === idx ? { ...item, member: { ...item.member, name: e.target.value } } : item
-                        ),
-                      }))
-                    }
-                    placeholder="SP adı"
-                  />
-                  <input
-                    type="number"
-                    className={inputClassName}
-                    value={member.assignedCount}
-                    onChange={(e) =>
-                      patchPeriod((data) => ({
-                        ...data,
-                        teamPerformance: data.teamPerformance.map((item, itemIdx) => {
-                          if (itemIdx !== idx) return item
-                          const assignedCount = toNumber(e.target.value)
-                          const completionRate =
-                            assignedCount <= 0 ? 0 : Math.round((item.completedCount / assignedCount) * 100)
-                          return { ...item, assignedCount, completionRate }
-                        }),
-                      }))
-                    }
-                  />
-                  <input
-                    type="number"
-                    className={inputClassName}
-                    value={member.completedCount}
-                    onChange={(e) =>
-                      patchPeriod((data) => ({
-                        ...data,
-                        teamPerformance: data.teamPerformance.map((item, itemIdx) => {
-                          if (itemIdx !== idx) return item
-                          const completedCount = toNumber(e.target.value)
-                          const completionRate =
-                            item.assignedCount <= 0 ? 0 : Math.round((completedCount / item.assignedCount) * 100)
-                          return { ...item, completedCount, completionRate }
-                        }),
-                      }))
-                    }
-                  />
-                  <input
-                    type="number"
-                    step="0.1"
-                    className={inputClassName}
-                    value={member.avgDurationDays}
-                    onChange={(e) =>
-                      patchPeriod((data) => ({
-                        ...data,
-                        teamPerformance: data.teamPerformance.map((item, itemIdx) =>
-                          itemIdx === idx ? { ...item, avgDurationDays: toNumber(e.target.value) } : item
-                        ),
-                      }))
-                    }
-                  />
-                  <input
-                    type="number"
-                    className={inputClassName}
-                    value={member.successScore}
-                    onChange={(e) =>
-                      patchPeriod((data) => ({
-                        ...data,
-                        teamPerformance: data.teamPerformance.map((item, itemIdx) =>
-                          itemIdx === idx ? { ...item, successScore: toNumber(e.target.value) } : item
-                        ),
-                      }))
-                    }
-                  />
-                  <Button
-                    variant="outline"
-                    size="icon"
-                    onClick={() =>
-                      patchPeriod((data) => ({
-                        ...data,
-                        teamPerformance: data.teamPerformance.filter((_, itemIdx) => itemIdx !== idx),
-                      }))
-                    }
-                  >
-                    <Trash2 className="h-4 w-4" />
-                  </Button>
-                </div>
-              ))}
-
-              <Button
-                size="sm"
-                variant="outline"
-                onClick={() =>
-                  patchPeriod((data) => ({
-                    ...data,
-                    teamPerformance: [
-                      ...data.teamPerformance,
-                      {
-                        member: { id: `sp-${Date.now()}`, name: '' },
-                        assignedCount: 0,
-                        completedCount: 0,
-                        completionRate: 0,
-                        avgDurationDays: 0,
-                        successScore: 0,
-                      },
-                    ],
-                  }))
-                }
-              >
-                <Plus className="mr-1 h-3.5 w-3.5" />
-                SP Ekle
-              </Button>
-            </CardContent>
-          </Card>
-        </div>
-
-        <div className="grid grid-cols-1 gap-5 2xl:grid-cols-2">
-          <Card>
-            <CardHeader>
-              <CardTitle>Aylık Hedefler</CardTitle>
-            </CardHeader>
-            <CardContent className="space-y-2">
-              <div className="hidden xl:grid xl:grid-cols-[minmax(0,1.25fr)_minmax(0,0.8fr)_minmax(0,0.8fr)_minmax(0,0.6fr)_40px] xl:items-center xl:gap-2 xl:px-1">
-                <span className="text-[11px] font-semibold tracking-[0.08em] text-muted-foreground uppercase">Metrik</span>
-                <span className="text-[11px] font-semibold tracking-[0.08em] text-muted-foreground uppercase">Hedef</span>
-                <span className="text-[11px] font-semibold tracking-[0.08em] text-muted-foreground uppercase">Gerçekleşen</span>
-                <span className="text-[11px] font-semibold tracking-[0.08em] text-muted-foreground uppercase">Birim</span>
-                <span />
-              </div>
-              {periodData.monthlyTargets.map((target, idx) => (
-                <div
-                  key={idx}
-                  className="grid grid-cols-1 items-center gap-2 sm:grid-cols-2 xl:grid-cols-[minmax(0,1.25fr)_minmax(0,0.8fr)_minmax(0,0.8fr)_minmax(0,0.6fr)_40px]"
-                >
-                  <input
-                    className={inputClassName}
-                    value={target.metricName}
-                    onChange={(e) =>
-                      patchPeriod((data) => ({
-                        ...data,
-                        monthlyTargets: data.monthlyTargets.map((item, itemIdx) =>
-                          itemIdx === idx ? { ...item, metricName: e.target.value } : item
-                        ),
-                      }))
-                    }
-                    placeholder="Metrik adı"
-                  />
-                  <input
-                    type="number"
-                    className={inputClassName}
-                    value={target.targetValue}
-                    onChange={(e) =>
-                      patchPeriod((data) => ({
-                        ...data,
-                        monthlyTargets: data.monthlyTargets.map((item, itemIdx) =>
-                          itemIdx === idx ? { ...item, targetValue: toNumber(e.target.value) } : item
-                        ),
-                      }))
-                    }
-                  />
-                  <input
-                    type="number"
-                    className={inputClassName}
-                    value={target.actualValue}
-                    onChange={(e) =>
-                      patchPeriod((data) => ({
-                        ...data,
-                        monthlyTargets: data.monthlyTargets.map((item, itemIdx) =>
-                          itemIdx === idx ? { ...item, actualValue: toNumber(e.target.value) } : item
-                        ),
-                      }))
-                    }
-                  />
-                  <input
-                    className={inputClassName}
-                    value={target.unit}
-                    onChange={(e) =>
-                      patchPeriod((data) => ({
-                        ...data,
-                        monthlyTargets: data.monthlyTargets.map((item, itemIdx) =>
-                          itemIdx === idx ? { ...item, unit: e.target.value } : item
-                        ),
-                      }))
-                    }
-                  />
-                  <Button
-                    variant="outline"
-                    size="icon"
-                    onClick={() =>
-                      patchPeriod((data) => ({
-                        ...data,
-                        monthlyTargets: data.monthlyTargets.filter((_, itemIdx) => itemIdx !== idx),
-                      }))
-                    }
-                  >
-                    <Trash2 className="h-4 w-4" />
-                  </Button>
-                </div>
-              ))}
-              <Button
-                size="sm"
-                variant="outline"
-                onClick={() =>
-                  patchPeriod((data) => ({
-                    ...data,
-                    monthlyTargets: [...data.monthlyTargets, { metricName: '', targetValue: 0, actualValue: 0, unit: '' }],
-                  }))
-                }
-              >
-                <Plus className="mr-1 h-3.5 w-3.5" />
-                Hedef Ekle
-              </Button>
-            </CardContent>
-          </Card>
-
-          <Card>
-            <CardHeader>
-              <CardTitle>Başarı Endeksi</CardTitle>
-            </CardHeader>
-            <CardContent className="space-y-3">
-              <label className="space-y-1">
-                <span className="text-xs text-muted-foreground">Genel Skor</span>
                 <input
-                  type="number"
                   className={inputClassName}
-                  value={periodData.successIndex.overallScore}
+                  value={target.name}
                   onChange={(e) =>
                     patchPeriod((data) => ({
                       ...data,
-                      successIndex: {
-                        ...data.successIndex,
-                        overallScore: toNumber(e.target.value),
-                      },
+                      targets: data.targets.map((item, itemIdx) =>
+                        itemIdx === idx ? { ...item, name: e.target.value } : item
+                      ),
                     }))
                   }
+                  placeholder="Marka"
                 />
-              </label>
-
-              <div className="hidden xl:grid xl:grid-cols-[minmax(0,1.25fr)_minmax(0,0.65fr)_minmax(0,0.65fr)_40px] xl:items-center xl:gap-2 xl:px-1">
-                <span className="text-[11px] font-semibold tracking-[0.08em] text-muted-foreground uppercase">Metrik</span>
-                <span className="text-[11px] font-semibold tracking-[0.08em] text-muted-foreground uppercase">Değer</span>
-                <span className="text-[11px] font-semibold tracking-[0.08em] text-muted-foreground uppercase">Ağırlık</span>
-                <span />
-              </div>
-
-              {periodData.successIndex.metrics.map((metric, idx) => (
-                <div
-                  key={idx}
-                  className="grid grid-cols-1 items-center gap-2 sm:grid-cols-2 xl:grid-cols-[minmax(0,1.25fr)_minmax(0,0.65fr)_minmax(0,0.65fr)_40px]"
+                <input
+                  className={inputClassName}
+                  value={target.sector}
+                  onChange={(e) =>
+                    patchPeriod((data) => ({
+                      ...data,
+                      targets: data.targets.map((item, itemIdx) =>
+                        itemIdx === idx ? { ...item, sector: e.target.value } : item
+                      ),
+                    }))
+                  }
+                  placeholder="Sektör"
+                />
+                <input
+                  type="number"
+                  className={inputClassName}
+                  value={target.estimatedRevenue}
+                  onChange={(e) =>
+                    patchPeriod((data) => ({
+                      ...data,
+                      targets: data.targets.map((item, itemIdx) =>
+                        itemIdx === idx ? { ...item, estimatedRevenue: toNumber(e.target.value) } : item
+                      ),
+                    }))
+                  }
+                  placeholder="Tahmini ciro"
+                />
+                <select
+                  className={inputClassName}
+                  value={target.status}
+                  onChange={(e) =>
+                    patchPeriod((data) => ({
+                      ...data,
+                      targets: data.targets.map((item, itemIdx) =>
+                        itemIdx === idx ? { ...item, status: e.target.value as TargetStatus } : item
+                      ),
+                    }))
+                  }
                 >
-                  <input
-                    className={inputClassName}
-                    value={metric.label}
-                    onChange={(e) =>
-                      patchPeriod((data) => ({
-                        ...data,
-                        successIndex: {
-                          ...data.successIndex,
-                          metrics: data.successIndex.metrics.map((item, itemIdx) =>
-                            itemIdx === idx ? { ...item, label: e.target.value } : item
-                          ),
-                        },
-                      }))
-                    }
-                    placeholder="Metrik"
-                  />
-                  <input
-                    type="number"
-                    className={inputClassName}
-                    value={metric.value}
-                    onChange={(e) =>
-                      patchPeriod((data) => ({
-                        ...data,
-                        successIndex: {
-                          ...data.successIndex,
-                          metrics: data.successIndex.metrics.map((item, itemIdx) =>
-                            itemIdx === idx ? { ...item, value: toNumber(e.target.value) } : item
-                          ),
-                        },
-                      }))
-                    }
-                  />
-                  <input
-                    type="number"
-                    className={inputClassName}
-                    value={metric.weight}
-                    onChange={(e) =>
-                      patchPeriod((data) => ({
-                        ...data,
-                        successIndex: {
-                          ...data.successIndex,
-                          metrics: data.successIndex.metrics.map((item, itemIdx) =>
-                            itemIdx === idx ? { ...item, weight: toNumber(e.target.value) } : item
-                          ),
-                        },
-                      }))
-                    }
-                  />
-                  <Button
-                    variant="outline"
-                    size="icon"
-                    onClick={() =>
-                      patchPeriod((data) => ({
-                        ...data,
-                        successIndex: {
-                          ...data.successIndex,
-                          metrics: data.successIndex.metrics.filter((_, itemIdx) => itemIdx !== idx),
-                        },
-                      }))
-                    }
-                  >
-                    <Trash2 className="h-4 w-4" />
-                  </Button>
-                </div>
-              ))}
+                  <option value="live">Canlıda</option>
+                  <option value="not-live">Canlı Değil</option>
+                </select>
+                <Button
+                  variant="outline"
+                  size="icon"
+                  onClick={() =>
+                    patchPeriod((data) => ({
+                      ...data,
+                      targets: data.targets.filter((_, itemIdx) => itemIdx !== idx),
+                    }))
+                  }
+                >
+                  <Trash2 className="h-4 w-4" />
+                </Button>
+              </div>
+            ))}
 
-              <Button
-                size="sm"
-                variant="outline"
-                onClick={() =>
-                  patchPeriod((data) => ({
-                    ...data,
-                    successIndex: {
-                      ...data.successIndex,
-                      metrics: [...data.successIndex.metrics, { label: '', value: 0, weight: 0 }],
-                    },
-                  }))
-                }
-              >
-                <Plus className="mr-1 h-3.5 w-3.5" />
-                Başarı Metrik Ekle
-              </Button>
-            </CardContent>
-          </Card>
-        </div>
+            <Button
+              size="sm"
+              variant="outline"
+              onClick={() =>
+                patchPeriod((data) => ({
+                  ...data,
+                  targets: [...data.targets, { name: '', sector: '', estimatedRevenue: 0, status: 'not-live' }],
+                }))
+              }
+            >
+              <Plus className="mr-1 h-3.5 w-3.5" />
+              Marka Ekle
+            </Button>
+          </CardContent>
+        </Card>
 
         <Card>
           <CardHeader>
@@ -1006,67 +871,19 @@ export function AdminPage() {
                 }))
               }
             />
-
-            <details className="rounded-xl border border-border/70 bg-white/65 p-3">
-              <summary className="cursor-pointer text-sm font-medium text-foreground">
-                Gelişmiş: JSON ile düzenle
-              </summary>
-              <div className="mt-3 space-y-3">
-                <textarea
-                  className="min-h-[260px] w-full rounded-xl border border-border/80 bg-white/95 p-3 font-mono text-xs outline-none focus:border-primary/60 focus:ring-2 focus:ring-primary/20"
-                  value={cohortDraft}
-                  onChange={(e) => {
-                    setCohortDraftMap((prev) => ({ ...prev, [periodKey]: e.target.value }))
-                    setCohortError(null)
-                  }}
-                />
-                {cohortError && (
-                  <p className="text-sm font-medium text-destructive">{cohortError}</p>
-                )}
-                <div className="flex items-center gap-2">
-                  <Button
-                    size="sm"
-                    onClick={() => {
-                      try {
-                        const parsed = JSON.parse(cohortDraft)
-                        if (!isCohortMatrix(parsed)) {
-                          setCohortError('JSON formatı cohort matrisi ile uyumlu değil.')
-                          return
-                        }
-                        patchPeriod((data) => ({
-                          ...data,
-                          cohort: parsed,
-                        }))
-                        setCohortDraftMap((prev) => ({
-                          ...prev,
-                          [periodKey]: JSON.stringify(parsed, null, 2),
-                        }))
-                        setCohortError(null)
-                      } catch {
-                        setCohortError('JSON parse edilemedi. Lütfen formatı kontrol et.')
-                      }
-                    }}
-                  >
-                    Cohort JSON Kaydet
-                  </Button>
-                  <Button
-                    size="sm"
-                    variant="outline"
-                    onClick={() =>
-                      setCohortDraftMap((prev) => ({
-                        ...prev,
-                        [periodKey]: JSON.stringify(periodData.cohort, null, 2),
-                      }))
-                    }
-                  >
-                    Geri Al
-                  </Button>
-                </div>
-              </div>
-            </details>
           </CardContent>
         </Card>
       </div>
     </div>
   )
+}
+
+export function AdminPage() {
+  const { isAdmin } = useAdminAuth()
+
+  if (!isAdmin) {
+    return <AdminLoginExperience />
+  }
+
+  return <AdminWorkspace />
 }

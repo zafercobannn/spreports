@@ -1,18 +1,11 @@
 import { useMemo, useState } from 'react'
-import { animated } from '@react-spring/web'
-import type { DefaultRawDatum, PieSvgProps } from '@nivo/pie'
 import { ChartContainer } from '@/components/charts/ChartContainer'
-import { PieChart } from '@/components/charts/PieChart'
 import type { PlatformCount } from '@/types/gpv'
-import { formatPercent } from '@/utils/format'
+import { formatNumber, formatPercent } from '@/utils/format'
 
 interface PreviousPlatformChartProps {
   data: PlatformCount[]
-}
-
-interface PlatformPieDatum extends DefaultRawDatum {
-  label: string
-  logoSrc: string
+  title?: string
 }
 
 function toLogoSlug(name: string): string {
@@ -37,9 +30,13 @@ function getInitials(name: string): string {
     .join('')
 }
 
-function PlatformLogo({ platformName }: { platformName: string }) {
+function PlatformLogo({
+  platformName,
+}: {
+  platformName: string
+}) {
   const [isError, setIsError] = useState(false)
-  const imageSrc = useMemo(() => `/images/${toLogoSlug(platformName)}.png`, [platformName])
+  const logoSrc = `/images/${toLogoSlug(platformName)}.png`
 
   if (isError) {
     return (
@@ -51,7 +48,7 @@ function PlatformLogo({ platformName }: { platformName: string }) {
 
   return (
     <img
-      src={imageSrc}
+      src={logoSrc}
       alt={platformName}
       className="h-10 w-10 shrink-0 rounded-lg border border-border/70 bg-white object-cover p-1"
       loading="lazy"
@@ -60,93 +57,44 @@ function PlatformLogo({ platformName }: { platformName: string }) {
   )
 }
 
-export function PreviousPlatformChart({ data }: PreviousPlatformChartProps) {
+export function PreviousPlatformChart({ data, title = 'Önceki Platform Dağılımı' }: PreviousPlatformChartProps) {
   const total = data.reduce((sum, platform) => sum + Math.max(0, platform.count), 0)
 
-  const chartData: PlatformPieDatum[] = total > 0
-    ? data
+  const sortedPlatforms = useMemo(
+    () => [...data]
       .filter((platform) => platform.count > 0)
-      .map((platform) => ({
-        id: platform.name,
-        label: platform.name,
-        value: (platform.count / total) * 100,
-        logoSrc: `/images/${toLogoSlug(platform.name)}.png`,
-      }))
-    : [{ id: 'veri-yok', label: 'Veri Yok', value: 100, logoSrc: '/images/veri-yok.png' }]
-
-  const sortedPlatforms = [...chartData]
-    .sort((a, b) => Number(b.value) - Number(a.value))
-    .filter((item) => item.id !== 'veri-yok')
-
-  const arcLabelsComponent: NonNullable<PieSvgProps<PlatformPieDatum>['arcLabelsComponent']> = ({
-    datum,
-    style,
-  }) => (
-    <animated.g opacity={style.progress}>
-      <animated.g transform={style.transform}>
-        <rect
-          x={-16}
-          y={-16}
-          width={32}
-          height={32}
-          rx={8}
-          ry={8}
-          fill="#ffffff"
-          stroke="#c4d8df"
-          strokeWidth={1}
-        />
-        <text
-          x={0}
-          y={0.5}
-          textAnchor="middle"
-          dominantBaseline="central"
-          fontSize={9}
-          fontWeight={700}
-          fill="#6f8892"
-        >
-          {getInitials(datum.label?.toString() ?? '')}
-        </text>
-        <image
-          href={datum.data.logoSrc}
-          x={-13}
-          y={-13}
-          width={26}
-          height={26}
-          preserveAspectRatio="xMidYMid meet"
-        />
-      </animated.g>
-    </animated.g>
+      .sort((a, b) => b.count - a.count),
+    [data],
   )
 
   return (
     <ChartContainer
-      title="Önceki Platform Dağılımı"
+      title={title}
       height={420}
     >
-      <div className="grid h-full grid-cols-1 gap-4 xl:grid-cols-[minmax(0,1fr)_260px]">
-        <div className="min-h-0">
-          <PieChart
-            data={chartData}
-            valueFormat={(value) => `${Number(value).toFixed(1)}%`}
-            arcLabel={() => ''}
-            arcLabelsComponent={arcLabelsComponent}
-            arcLinkLabel={(item) => `${Number(item.value).toFixed(1)}%`}
-          />
-        </div>
-        <div className="space-y-2 overflow-y-auto pr-1">
-          {sortedPlatforms.map((platform) => (
-            <div
-              key={String(platform.id)}
-              className="flex items-center justify-between rounded-xl border border-border/70 bg-white/75 px-3 py-2"
-            >
-              <div className="flex min-w-0 items-center gap-2">
-                <PlatformLogo platformName={String(platform.label)} />
-                <span className="truncate text-sm font-medium text-foreground">{String(platform.label)}</span>
-              </div>
-              <span className="text-xs font-semibold text-primary">{formatPercent(Number(platform.value))}</span>
+      <div className="h-full space-y-2 overflow-y-auto pr-1">
+        {sortedPlatforms.map((platform) => (
+          <div
+            key={platform.name}
+            className="flex items-center justify-between rounded-xl border border-border/70 bg-white/75 px-3 py-2"
+          >
+            <div className="flex min-w-0 items-center gap-2">
+              <PlatformLogo platformName={platform.name} />
+              <span className="truncate text-sm font-medium text-foreground">{platform.name}</span>
             </div>
-          ))}
-        </div>
+            <span className="text-right text-xs font-semibold text-primary">
+              {formatNumber(platform.count)} adet
+              <span className="ml-1 text-[11px] font-medium text-muted-foreground">
+                ({formatPercent(total > 0 ? (platform.count / total) * 100 : 0)})
+              </span>
+            </span>
+          </div>
+        ))}
+        {sortedPlatforms.length === 0 && (
+          <div className="rounded-xl border border-dashed border-border/70 bg-white/75 px-3 py-8 text-center text-sm text-muted-foreground">
+            Veri yok
+          </div>
+        )}
       </div>
     </ChartContainer>
   )

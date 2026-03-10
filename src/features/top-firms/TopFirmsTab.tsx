@@ -1,10 +1,11 @@
 import { TopFirmsTable } from './TopFirmsTable'
 import { ShippingUsageChart } from './ShippingUsageChart'
+import { ParsUsageChart } from './ParsUsageChart'
 import { KPICard } from '@/components/data-display/KPICard'
 import { KPICardGrid } from '@/components/data-display/KPICardGrid'
 import { PageSection } from '@/components/layout/PageSection'
 import { formatCurrency, formatNumber, formatPercent } from '@/utils/format'
-import { sum, average, ratio } from '@/utils/calculations'
+import { sum, ratio } from '@/utils/calculations'
 import { useDashboardPeriodData } from '@/hooks/use-dashboard-data'
 
 export function TopFirmsTab() {
@@ -13,28 +14,27 @@ export function TopFirmsTab() {
   const data = periodData.topFirms
 
   const totalRevenue = sum(data.map((f) => f.gpv))
-  const totalShipments = sum(data.map((f) => f.shipmentSent))
-  const ikasCargoUsers = data.filter((f) => f.ikasCargoValue > 0).length
-  const ikasCargoNonUsers = Math.max(0, data.length - ikasCargoUsers)
-  const ikasCargoUsageRate = ratio(ikasCargoUsers, data.length)
-  const avgParsUsage = average(data.map((f) => f.parsUsageRate))
-  const avgParsNonUsage = Math.max(0, 100 - avgParsUsage)
+  const ikasUsers = data.filter((f) => f.ikasCargoValue > 0).length
+  const ikasNonUsers = Math.max(0, data.length - ikasUsers)
+  const ikasUsageRate = ratio(ikasUsers, data.length)
+  const parsUsers = data.filter((f) => f.usesPars).length
+  const parsNonUsers = Math.max(0, data.length - parsUsers)
+  const parsUsageRate = ratio(parsUsers, data.length)
 
   return (
     <div className="space-y-6">
       <PageSection title="Top 15 Özet">
-        <KPICardGrid columns={4}>
+        <KPICardGrid columns={3}>
           <KPICard label="Toplam Ciro" value={formatCurrency(totalRevenue)} />
-          <KPICard label="Toplam Gönderi" value={formatNumber(totalShipments)} />
           <KPICard
             label="ikas Kargo Kullanan"
-            value={formatPercent(ikasCargoUsageRate)}
-            subtitle={`Kullanmayan: ${formatPercent(ratio(ikasCargoNonUsers, data.length))}`}
+            value={formatPercent(ikasUsageRate)}
+            subtitle={`Kullanan: ${formatNumber(ikasUsers)} firma | Kullanmayan: ${formatNumber(ikasNonUsers)} firma`}
           />
           <KPICard
             label="PARS Kullanan"
-            value={formatPercent(avgParsUsage)}
-            subtitle={`Kullanmayan: ${formatPercent(avgParsNonUsage)}`}
+            value={formatPercent(parsUsageRate)}
+            subtitle={`Kullanan: ${formatNumber(parsUsers)} firma | Kullanmayan: ${formatNumber(parsNonUsers)} firma`}
           />
         </KPICardGrid>
       </PageSection>
@@ -45,8 +45,9 @@ export function TopFirmsTab() {
             <TopFirmsTable data={data} />
           </PageSection>
         </div>
-        <div>
+        <div className="space-y-4">
           <ShippingUsageChart data={data} />
+          <ParsUsageChart data={data} />
         </div>
       </div>
     </div>

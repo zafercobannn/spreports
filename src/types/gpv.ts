@@ -5,11 +5,17 @@ export interface MonthlyGPV {
   spGPV: number
   gpvRatio: number
   liveAccountCount: number
+  liveSPCount: number
   monthlyLiveCount: number
   totalSP: number
   premiumOnboardingLiveCount: number
-  avgGoLiveDurationDays: number
-  previousPlatforms: PlatformCount[]
+  premiumOnboardingAvgGoLiveDurationDays: number
+  scalePlusAvgGoLiveDurationDays: number
+  previousPlatformsSP: PlatformCount[]
+  previousPlatformsPremiumOnboarding: PlatformCount[]
+  // Legacy alanlar: eski local veriyi bozmayalım.
+  avgGoLiveDurationDays?: number
+  previousPlatforms?: PlatformCount[]
 }
 
 export interface PlatformCount {

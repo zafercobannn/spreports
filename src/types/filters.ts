@@ -1,4 +1,4 @@
-export type DashboardTab = 'monthly' | 'cohort' | 'top-firms' | 'targets' | 'team'
+export type DashboardTab = 'monthly' | 'comparison' | 'cohort' | 'top-firms' | 'realized-targets' | 'x-month-target' | 'team'
 
 export interface FilterState {
   year: number

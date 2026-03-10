@@ -1,7 +1,5 @@
-import { SuccessIndexCard } from './SuccessIndexCard'
-import { MonthlyTargetTable } from './MonthlyTargetTable'
-import { SPComparisonChart } from './SPComparisonChart'
 import { RepresentativeSuccessBoard } from './RepresentativeSuccessBoard'
+import { RepresentativeMonthlyNpsChart } from './RepresentativeMonthlyNpsChart'
 import { PageSection } from '@/components/layout/PageSection'
 import { getMonthName } from '@/utils/date-utils'
 import { useFilters } from '@/hooks/use-filters'
@@ -14,27 +12,16 @@ export function TeamPerformanceTab() {
 
   return (
     <div className="space-y-6">
-      <PageSection title="Temsilci Başarı Endeksi" description="Aylık temsilci başarı skorları">
-        <RepresentativeSuccessBoard
-          data={periodData.representativeSuccess}
-          weights={periodData.representativeWeights}
-          monthLabel={getMonthName(month)}
-          year={year}
-        />
-      </PageSection>
-
-      <div className="grid grid-cols-1 gap-6 lg:grid-cols-3">
-        <SuccessIndexCard data={periodData.successIndex} />
-        <div className="lg:col-span-2">
-          <MonthlyTargetTable
-            data={periodData.monthlyTargets}
+      <PageSection title="Temsilci Başarı Endeksi" description="Aylık temsilci skorları ve canlıya alma süresi trendi">
+        <div className="space-y-5">
+          <RepresentativeSuccessBoard
+            data={periodData.representativeSuccess}
+            weights={periodData.representativeWeights}
             monthLabel={getMonthName(month)}
+            year={year}
           />
+          <RepresentativeMonthlyNpsChart year={year} month={month} />
         </div>
-      </div>
-
-      <PageSection title="SP Karşılaştırması" description="Takım üyelerinin performansı">
-        <SPComparisonChart data={periodData.teamPerformance} />
       </PageSection>
     </div>
   )

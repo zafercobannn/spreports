@@ -131,6 +131,12 @@ export function parseRepresentativeCsv(csvText: string): RepresentativeSuccessRe
   const liveTargetIdx = resolveHeaderIndex(headers, ['canliyaalinanhesapsayisihedefi', 'canliyaalinanfirmaadedihedefi'])
   const auditIdx = resolveHeaderIndex(headers, ['auditpuani', 'auditskoru'])
   const npsIdx = resolveHeaderIndex(headers, ['npsanketskoru', 'onboardinganketskoru', 'npsscore'])
+  const avgGoLiveDurationIdx = resolveHeaderIndex(headers, [
+    'ortalamacanliyaalmasuresi',
+    'ortalamacanliyaalmasuresigun',
+    'avggolivedurationdays',
+    'canliyaalmasuresi',
+  ])
   const meetingIdx = resolveHeaderIndex(headers, ['toplantidegerlendirmesi'])
   const imageIdx = resolveHeaderIndex(headers, ['gorsel', 'gorselurl', 'image', 'imageurl', 'foto', 'fotourl'])
 
@@ -148,6 +154,7 @@ export function parseRepresentativeCsv(csvText: string): RepresentativeSuccessRe
       liveTarget: Math.max(0, toNumber(cells[liveTargetIdx] ?? '0')),
       auditScore: Math.max(0, Math.min(100, toNumber(cells[auditIdx] ?? '0'))),
       npsScore: Math.max(0, Math.min(5, toNumber(cells[npsIdx] ?? '0'))),
+      avgGoLiveDurationDays: Math.max(0, toNumber(avgGoLiveDurationIdx >= 0 ? (cells[avgGoLiveDurationIdx] ?? '0') : '0')),
       meetingScore: Math.max(0, Math.min(5, toNumber(cells[meetingIdx] ?? '0'))),
       imageUrl: imageIdx >= 0 ? (cells[imageIdx] ?? '') : '',
     }

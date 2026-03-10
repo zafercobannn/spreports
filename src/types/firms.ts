@@ -6,7 +6,9 @@ export interface TopFirm {
   gpvChange: number
   shipmentSent: number
   ikasCargoValue: number
-  parsUsageRate: number
+  usesPars: boolean
+  // Legacy alan: eski verilerde yüzde saklanmış olabilir.
+  parsUsageRate?: number
 }
 
 export interface FirmGPVComparison {

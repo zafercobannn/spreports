@@ -1,16 +1,5 @@
 import { create, type StoreApi } from 'zustand'
 import { createJSONStorage, persist } from 'zustand/middleware'
-import {
-  MOCK_COHORT,
-  MOCK_MONTHLY_GPV,
-  MOCK_MONTHLY_TARGETS,
-  MOCK_REPRESENTATIVE_SUCCESS,
-  MOCK_REPRESENTATIVE_SUCCESS_WEIGHTS,
-  MOCK_SUCCESS_INDEX,
-  MOCK_TARGETS,
-  MOCK_TEAM_PERFORMANCE,
-  MOCK_TOP_FIRMS,
-} from '@/services/mock-data'
 import type { DashboardPeriodData } from '@/types/dashboard-data'
 import type { CohortMatrix } from '@/types/cohort'
 import type { TopFirm } from '@/types/firms'
@@ -26,11 +15,21 @@ import {
 
 const STORAGE_KEY = 'spreports-manual-dashboard-data-v1'
 const CLOUD_SAVE_DEBOUNCE_MS = 1200
+const LOCAL_TO_CLOUD_MIGRATION_FLAG = 'spreports-local-to-cloud-migration-v1'
+const ROLLING_MONTH_WINDOW = 6
 
 const periodSaveTimers = new Map<string, ReturnType<typeof setTimeout>>()
-const periodHydrationTasks = new Map<string, Promise<void>>()
+const periodEnsureTasks = new Map<string, Promise<void>>()
 const periodLocalVersions = new Map<string, number>()
 const hydratedPeriodKeys = new Set<string>()
+let localToCloudMigrationTask: Promise<void> | null = null
+
+const DEFAULT_REPRESENTATIVE_WEIGHTS: RepresentativeSuccessWeights = {
+  liveCount: 30,
+  auditScore: 30,
+  npsScore: 20,
+  meetingScore: 20,
+}
 
 function deepClone<T>(value: T): T {
   if (typeof structuredClone === 'function') {
@@ -85,8 +84,9 @@ function parsePeriodKey(key: string): { year: number; month: number } | null {
 }
 
 function normalizeLegacyStatus(status: unknown): TargetStatus {
-  if (status === 'live' || status === 'pending' || status === 'lost') return status
-  return 'pending'
+  if (status === 'live' || status === 'not-live') return status
+  if (status === 'pending' || status === 'lost') return 'not-live'
+  return 'not-live'
 }
 
 function isCohortMatrix(value: unknown): value is CohortMatrix {
@@ -103,6 +103,7 @@ function normalizeTopFirm(firm: unknown, rank: number, seedFirm?: TopFirm): TopF
     gpvChange: 0,
     shipmentSent: 0,
     ikasCargoValue: 0,
+    usesPars: false,
     parsUsageRate: 0,
   }
 
@@ -129,6 +130,12 @@ function normalizeTopFirm(firm: unknown, rank: number, seedFirm?: TopFirm): TopF
   })()
 
   const parsUsageRate = calculateParsUsageRatePercent(shipmentSent, ikasCargoValue)
+  const usesPars = (() => {
+    if (typeof firm.usesPars === 'boolean') return firm.usesPars
+    const legacyRate = toNumber(firm.parsUsageRate, Number.NaN)
+    if (Number.isFinite(legacyRate)) return legacyRate > 0
+    return base.usesPars
+  })()
   const gpvChange = calculateGpvChangePercent(gpv, previousMonthGPV)
 
   return {
@@ -139,6 +146,7 @@ function normalizeTopFirm(firm: unknown, rank: number, seedFirm?: TopFirm): TopF
     gpvChange,
     shipmentSent,
     ikasCargoValue,
+    usesPars,
     parsUsageRate,
   }
 }
@@ -155,6 +163,7 @@ function normalizeRepresentativeRecord(
     liveTarget: 0,
     auditScore: 0,
     npsScore: 0,
+    avgGoLiveDurationDays: 0,
     meetingScore: 0,
     imageUrl: '',
   }
@@ -170,6 +179,7 @@ function normalizeRepresentativeRecord(
     liveTarget: Math.max(0, toNumber(record.liveTarget, base.liveTarget)),
     auditScore: Math.max(0, Math.min(100, toNumber(record.auditScore, base.auditScore))),
     npsScore: Math.max(0, Math.min(5, toNumber(record.npsScore, base.npsScore))),
+    avgGoLiveDurationDays: Math.max(0, toNumber(record.avgGoLiveDurationDays, base.avgGoLiveDurationDays)),
     meetingScore: Math.max(0, Math.min(5, toNumber(record.meetingScore, base.meetingScore))),
     imageUrl: typeof record.imageUrl === 'string' ? record.imageUrl : base.imageUrl,
   }
@@ -195,34 +205,154 @@ export function getPeriodKey(year: number, month: number): string {
   return `${year}-${String(normalizeMonth(month)).padStart(2, '0')}`
 }
 
-function buildRollingMonthNames(endMonth: number, count: number): string[] {
-  const normalizedCount = Math.max(2, Math.min(12, count))
-  const normalizedEndMonth = normalizeMonth(endMonth)
-  return Array.from({ length: normalizedCount }, (_, idx) => {
-    const offset = normalizedCount - idx - 1
-    const monthIndex = (normalizedEndMonth - 1 - offset + 12) % 12
-    return TURKISH_MONTHS[monthIndex]
+function normalizeYearMonth(
+  year: number,
+  month: number,
+): { year: number; month: number } {
+  if (!Number.isFinite(year)) {
+    return { year: new Date().getFullYear(), month: normalizeMonth(month) }
+  }
+
+  let normalizedYear = Math.round(year)
+  let normalizedMonth = Math.round(month)
+
+  while (normalizedMonth < 1) {
+    normalizedYear -= 1
+    normalizedMonth += 12
+  }
+  while (normalizedMonth > 12) {
+    normalizedYear += 1
+    normalizedMonth -= 12
+  }
+
+  return { year: normalizedYear, month: normalizeMonth(normalizedMonth) }
+}
+
+function getMonthYearLabel(year: number, month: number): string {
+  const normalized = normalizeYearMonth(year, month)
+  const date = new Date(Date.UTC(normalized.year, normalized.month - 1, 1))
+  return new Intl.DateTimeFormat('tr-TR', {
+    month: 'short',
+    year: 'numeric',
+    timeZone: 'UTC',
+  })
+    .format(date)
+    .replaceAll('.', '')
+    .replace(/\s+/g, ' ')
+    .trim()
+}
+
+function getMonthNameFromLabel(label: string): string | null {
+  const normalizedLabel = normalizeLabel(label)
+  return TURKISH_MONTHS.find((monthName) => {
+    const normalizedMonth = normalizeLabel(monthName)
+    const shortToken = normalizedMonth.slice(0, 3)
+    return normalizedLabel.includes(normalizedMonth) || normalizedLabel.includes(shortToken)
+  }) ?? null
+}
+
+function normalizeLabel(value: string): string {
+  return value
+    .toLocaleLowerCase('tr-TR')
+    .replaceAll('ı', 'i')
+    .replaceAll('ğ', 'g')
+    .replaceAll('ü', 'u')
+    .replaceAll('ş', 's')
+    .replaceAll('ö', 'o')
+    .replaceAll('ç', 'c')
+    .replace(/[^a-z0-9]/g, '')
+}
+
+export interface RollingPeriodWindowItem {
+  key: string
+  year: number
+  month: number
+  label: string
+  monthName: string
+}
+
+export function buildRollingPeriodWindow(
+  endYear: number,
+  endMonth: number,
+  size = ROLLING_MONTH_WINDOW,
+): RollingPeriodWindowItem[] {
+  const normalizedSize = Math.max(1, Math.round(size))
+  const end = normalizeYearMonth(endYear, endMonth)
+
+  return Array.from({ length: normalizedSize }, (_, idx) => {
+    const offset = normalizedSize - idx - 1
+    const resolved = normalizeYearMonth(end.year, end.month - offset)
+    return {
+      year: resolved.year,
+      month: resolved.month,
+      key: getPeriodKey(resolved.year, resolved.month),
+      label: getMonthYearLabel(resolved.year, resolved.month),
+      monthName: TURKISH_MONTHS[resolved.month - 1],
+    }
   })
 }
 
-function normalizeCohortForMonth(cohort: CohortMatrix, month: number): CohortMatrix {
-  const monthCount = Math.max(6, Math.min(12, cohort.months.length || 6))
-  const months = buildRollingMonthNames(month, monthCount)
-  const rowMap = new Map(cohort.rows.map((row) => [row.goLiveMonth, row]))
+function normalizePlatformCounts(value: unknown): DashboardPeriodData['monthlyGPV']['previousPlatformsSP'] {
+  if (!Array.isArray(value)) return []
+  return value
+    .map((item) => {
+      if (!isObjectLike(item)) return null
+      return {
+        name: typeof item.name === 'string' ? item.name : '',
+        count: Math.max(0, toNumber(item.count, 0)),
+      }
+    })
+    .filter((item): item is DashboardPeriodData['monthlyGPV']['previousPlatformsSP'][number] => item !== null)
+}
 
-  const rows = months.map((goLiveMonth) => {
-    const sourceRow = rowMap.get(goLiveMonth)
-    const sourceCellMap = new Map(
-      (sourceRow?.cells ?? []).map((cell) => [cell.observedMonth, cell.gpvValue] as const),
+function calculateMonthlyLiveCount(liveSPCount: number, premiumOnboardingLiveCount: number): number {
+  const safeLiveSp = Math.max(0, toNumber(liveSPCount, 0))
+  const safePremium = Math.max(0, toNumber(premiumOnboardingLiveCount, 0))
+  return safeLiveSp + safePremium
+}
+
+function normalizeCohortForMonth(
+  cohort: CohortMatrix,
+  year: number,
+  month: number,
+): CohortMatrix {
+  const window = buildRollingPeriodWindow(year, month)
+  const months = window.map((item) => item.label)
+  const rowMapByLabel = new Map(
+    cohort.rows.map((row) => [normalizeLabel(row.goLiveMonth), row] as const),
+  )
+  const rowMapByMonthName = new Map<string, CohortMatrix['rows'][number]>()
+
+  cohort.rows.forEach((row) => {
+    const monthName = getMonthNameFromLabel(row.goLiveMonth)
+    if (!monthName || rowMapByMonthName.has(monthName)) return
+    rowMapByMonthName.set(monthName, row)
+  })
+
+  const rows = window.map((slot) => {
+    const sourceRow = rowMapByLabel.get(normalizeLabel(slot.label)) ?? rowMapByMonthName.get(slot.monthName)
+    const sourceCellMapByLabel = new Map(
+      (sourceRow?.cells ?? []).map((cell) => [normalizeLabel(cell.observedMonth), cell.gpvValue] as const),
     )
+    const sourceCellMapByMonthName = new Map<string, number>()
+
+    ;(sourceRow?.cells ?? []).forEach((cell) => {
+      const monthName = getMonthNameFromLabel(cell.observedMonth)
+      if (!monthName || sourceCellMapByMonthName.has(monthName)) return
+      sourceCellMapByMonthName.set(monthName, cell.gpvValue)
+    })
 
     return {
-      goLiveMonth,
+      goLiveMonth: slot.label,
       firmCount: toNumber(sourceRow?.firmCount, 0),
-      cells: months.map((observedMonth) => ({
-        goLiveMonth,
-        observedMonth,
-        gpvValue: toNumber(sourceCellMap.get(observedMonth), 0),
+      cells: window.map((observedSlot) => ({
+        goLiveMonth: slot.label,
+        observedMonth: observedSlot.label,
+        gpvValue: toNumber(
+          sourceCellMapByLabel.get(normalizeLabel(observedSlot.label))
+            ?? sourceCellMapByMonthName.get(observedSlot.monthName),
+          0,
+        ),
       })),
       topFirms: Array.isArray(sourceRow?.topFirms)
         ? sourceRow.topFirms.map((firm) => ({
@@ -239,36 +369,72 @@ function normalizeCohortForMonth(cohort: CohortMatrix, month: number): CohortMat
   }
 }
 
-function createSeedPeriodData(year: number, month: number): DashboardPeriodData {
+function createEmptyCohortForMonth(year: number, month: number): CohortMatrix {
   const normalizedMonth = normalizeMonth(month)
-  const topFirms = deepClone(MOCK_TOP_FIRMS).map((firm, idx) => ({
-    ...firm,
-    rank: idx + 1,
-    gpvChange: calculateGpvChangePercent(firm.gpv, firm.previousMonthGPV),
-    parsUsageRate: calculateParsUsageRatePercent(firm.shipmentSent, firm.ikasCargoValue),
-  }))
+  const window = buildRollingPeriodWindow(year, normalizedMonth)
+  const months = window.map((item) => item.label)
 
-  const seedData: DashboardPeriodData = {
-    monthlyGPV: {
-      ...deepClone(MOCK_MONTHLY_GPV),
-      year,
-      month: normalizedMonth,
-    },
-    cohort: normalizeCohortForMonth(deepClone(MOCK_COHORT), normalizedMonth),
-    topFirms,
-    targets: deepClone(MOCK_TARGETS),
-    teamPerformance: deepClone(MOCK_TEAM_PERFORMANCE),
-    representativeSuccess: deepClone(MOCK_REPRESENTATIVE_SUCCESS),
-    representativeWeights: deepClone(MOCK_REPRESENTATIVE_SUCCESS_WEIGHTS),
-    monthlyTargets: deepClone(MOCK_MONTHLY_TARGETS),
-    successIndex: deepClone(MOCK_SUCCESS_INDEX),
+  return {
+    months,
+    rows: window.map((slot) => ({
+      goLiveMonth: slot.label,
+      firmCount: 0,
+      cells: months.map((observedMonth) => ({
+        goLiveMonth: slot.label,
+        observedMonth,
+        gpvValue: 0,
+      })),
+      topFirms: [
+        { name: '', gpv: 0 },
+        { name: '', gpv: 0 },
+        { name: '', gpv: 0 },
+      ],
+    })),
+  }
+}
+
+function createEmptyPeriodData(year: number, month: number): DashboardPeriodData {
+  const normalizedMonth = normalizeMonth(month)
+  const monthlyGPV: DashboardPeriodData['monthlyGPV'] = {
+    month: normalizedMonth,
+    year,
+    ikasGPV: 0,
+    spGPV: 0,
+    gpvRatio: 0,
+    liveAccountCount: 0,
+    liveSPCount: 0,
+    monthlyLiveCount: 0,
+    totalSP: 0,
+    premiumOnboardingLiveCount: 0,
+    premiumOnboardingAvgGoLiveDurationDays: 0,
+    scalePlusAvgGoLiveDurationDays: 0,
+    previousPlatformsSP: [],
+    previousPlatformsPremiumOnboarding: [],
   }
 
-  return normalizeIkasCasingDeep(seedData)
+  const emptyData: DashboardPeriodData = {
+    monthlyGPV: {
+      ...monthlyGPV,
+      monthlyLiveCount: calculateMonthlyLiveCount(monthlyGPV.liveSPCount, monthlyGPV.premiumOnboardingLiveCount),
+    },
+    cohort: createEmptyCohortForMonth(year, normalizedMonth),
+    topFirms: [],
+    targets: [],
+    teamPerformance: [],
+    representativeSuccess: [],
+    representativeWeights: deepClone(DEFAULT_REPRESENTATIVE_WEIGHTS),
+    monthlyTargets: [],
+    successIndex: {
+      overallScore: 0,
+      metrics: [],
+    },
+  }
+
+  return normalizeIkasCasingDeep(emptyData)
 }
 
 function sanitizePeriodData(year: number, month: number, raw: unknown): DashboardPeriodData {
-  const seed = createSeedPeriodData(year, month)
+  const seed = createEmptyPeriodData(year, month)
   const normalizedRaw = normalizeIkasCasingDeep(raw)
   if (!isObjectLike(normalizedRaw)) {
     return seed
@@ -283,6 +449,47 @@ function sanitizePeriodData(year: number, month: number, raw: unknown): Dashboar
         month: normalizeMonth(month),
       }
     : seed.monthlyGPV
+
+  const legacyPlatforms = normalizePlatformCounts(monthlyGPV.previousPlatforms)
+  const normalizedSpPlatforms = normalizePlatformCounts(monthlyGPV.previousPlatformsSP)
+  const normalizedPremiumPlatforms = normalizePlatformCounts(monthlyGPV.previousPlatformsPremiumOnboarding)
+  const hasSpPlatformsSource = Array.isArray(monthlyGPV.previousPlatformsSP)
+  const hasPremiumPlatformsSource = Array.isArray(monthlyGPV.previousPlatformsPremiumOnboarding)
+  const legacyAvgGoLive = toNumber(monthlyGPV.avgGoLiveDurationDays, 0)
+  const normalizedTotalSP = Math.max(0, toNumber(monthlyGPV.totalSP, seed.monthlyGPV.totalSP))
+  const normalizedPremiumOnboardingLiveCount = Math.max(
+    0,
+    toNumber(monthlyGPV.premiumOnboardingLiveCount, seed.monthlyGPV.premiumOnboardingLiveCount),
+  )
+  const normalizedLiveSPCount = Math.max(0, toNumber(monthlyGPV.liveSPCount, seed.monthlyGPV.liveSPCount))
+  const normalizedMonthlyLiveCount = calculateMonthlyLiveCount(
+    normalizedLiveSPCount,
+    normalizedPremiumOnboardingLiveCount,
+  )
+
+  const normalizedMonthlyGPV: DashboardPeriodData['monthlyGPV'] = {
+    ...monthlyGPV,
+    ikasGPV: Math.max(0, toNumber(monthlyGPV.ikasGPV, seed.monthlyGPV.ikasGPV)),
+    spGPV: Math.max(0, toNumber(monthlyGPV.spGPV, seed.monthlyGPV.spGPV)),
+    gpvRatio: Math.max(0, toNumber(monthlyGPV.gpvRatio, seed.monthlyGPV.gpvRatio)),
+    liveAccountCount: Math.max(0, toNumber(monthlyGPV.liveAccountCount, seed.monthlyGPV.liveAccountCount)),
+    totalSP: normalizedTotalSP,
+    premiumOnboardingLiveCount: normalizedPremiumOnboardingLiveCount,
+    monthlyLiveCount: normalizedMonthlyLiveCount,
+    liveSPCount: normalizedLiveSPCount,
+    premiumOnboardingAvgGoLiveDurationDays: Math.max(
+      0,
+      toNumber(monthlyGPV.premiumOnboardingAvgGoLiveDurationDays, legacyAvgGoLive),
+    ),
+    scalePlusAvgGoLiveDurationDays: Math.max(
+      0,
+      toNumber(monthlyGPV.scalePlusAvgGoLiveDurationDays, legacyAvgGoLive),
+    ),
+    previousPlatformsSP: hasSpPlatformsSource ? normalizedSpPlatforms : legacyPlatforms,
+    previousPlatformsPremiumOnboarding: hasPremiumPlatformsSource
+      ? normalizedPremiumPlatforms
+      : legacyPlatforms,
+  }
 
   const topFirms = Array.isArray(safeRaw.topFirms)
     ? safeRaw.topFirms.map((firm, idx) => normalizeTopFirm(firm, idx + 1, seed.topFirms[idx]))
@@ -359,10 +566,10 @@ function sanitizePeriodData(year: number, month: number, raw: unknown): Dashboar
     : seed.successIndex
 
   return {
-    monthlyGPV,
+    monthlyGPV: normalizedMonthlyGPV,
     cohort: isCohortMatrix(safeRaw.cohort)
-      ? normalizeCohortForMonth(safeRaw.cohort, month)
-      : normalizeCohortForMonth(seed.cohort, month),
+      ? normalizeCohortForMonth(safeRaw.cohort, year, month)
+      : normalizeCohortForMonth(seed.cohort, year, month),
     topFirms,
     targets,
     teamPerformance,
@@ -384,12 +591,8 @@ function ensurePeriodsMap(periods: unknown): Record<string, DashboardPeriodData>
   return sanitized
 }
 
-const seedKey = getPeriodKey(MOCK_MONTHLY_GPV.year, MOCK_MONTHLY_GPV.month)
-periodLocalVersions.set(seedKey, 0)
 function createInitialPeriods(): Record<string, DashboardPeriodData> {
-  return {
-    [seedKey]: createSeedPeriodData(MOCK_MONTHLY_GPV.year, MOCK_MONTHLY_GPV.month),
-  }
+  return {}
 }
 
 function getLocalPeriodVersion(key: string): number {
@@ -432,55 +635,140 @@ function schedulePeriodSaveToCloud(year: number, month: number, data: DashboardP
   periodSaveTimers.set(key, nextTimer)
 }
 
-function hydratePeriodFromCloud(
+function safeStorageGetItem(key: string): string | null {
+  try {
+    return localStorage.getItem(key)
+  } catch {
+    return null
+  }
+}
+
+function safeStorageSetItem(key: string, value: string): void {
+  try {
+    localStorage.setItem(key, value)
+  } catch {
+    // localStorage erişimi engellenmiş olabilir.
+  }
+}
+
+function safeStorageRemoveItem(key: string): void {
+  try {
+    localStorage.removeItem(key)
+  } catch {
+    // localStorage erişimi engellenmiş olabilir.
+  }
+}
+
+function migrateLocalPeriodsToCloudIfNeeded(
+  get: StoreApi<DashboardDataStore>['getState'],
+): Promise<void> {
+  if (!isCloudPersistenceEnabled()) return Promise.resolve()
+
+  const migrationDone = safeStorageGetItem(LOCAL_TO_CLOUD_MIGRATION_FLAG)
+  if (migrationDone === 'done' || migrationDone === 'failed') return Promise.resolve()
+  if (localToCloudMigrationTask) return localToCloudMigrationTask
+
+  localToCloudMigrationTask = (async () => {
+    const localPeriods = ensurePeriodsMap(get().periods)
+    for (const [key, periodData] of Object.entries(localPeriods)) {
+      const parsedKey = parsePeriodKey(key)
+      if (!parsedKey) continue
+
+      const cloudData = await loadDashboardPeriodFromCloud(parsedKey.year, parsedKey.month)
+      if (cloudData) continue
+
+      await saveDashboardPeriodToCloud(parsedKey.year, parsedKey.month, periodData)
+      hydratedPeriodKeys.add(key)
+    }
+
+    safeStorageSetItem(LOCAL_TO_CLOUD_MIGRATION_FLAG, 'done')
+  })()
+    .catch((error) => {
+      console.error('[dashboard-data-store] Local -> cloud migration başarısız:', error)
+      safeStorageSetItem(LOCAL_TO_CLOUD_MIGRATION_FLAG, 'failed')
+    })
+    .finally(() => {
+      localToCloudMigrationTask = null
+    })
+
+  return localToCloudMigrationTask
+}
+
+function ensurePeriodRemoteFirst(
   year: number,
   month: number,
+  get: StoreApi<DashboardDataStore>['getState'],
   set: StoreApi<DashboardDataStore>['setState'],
 ): Promise<void> {
-  if (!isCloudPersistenceEnabled()) {
-    return Promise.resolve()
-  }
+  const normalized = normalizeYearMonth(year, month)
+  const key = getPeriodKey(normalized.year, normalized.month)
 
-  const key = getPeriodKey(year, month)
-  if (hydratedPeriodKeys.has(key)) {
-    return Promise.resolve()
-  }
-  const existingTask = periodHydrationTasks.get(key)
+  const existingTask = periodEnsureTasks.get(key)
   if (existingTask) return existingTask
 
+  ensureLocalPeriodVersion(key)
   const localVersionAtStart = getLocalPeriodVersion(key)
 
-  const hydrationTask = (async () => {
-    const cloudData = await loadDashboardPeriodFromCloud(year, month)
-    if (!cloudData) {
+  const ensureTask = (async () => {
+    if (isCloudPersistenceEnabled()) {
+      await migrateLocalPeriodsToCloudIfNeeded(get)
+
+      const cloudData = await loadDashboardPeriodFromCloud(normalized.year, normalized.month)
+      if (cloudData && getLocalPeriodVersion(key) === localVersionAtStart) {
+        set((state) => ({
+          periods: {
+            ...ensurePeriodsMap(state.periods),
+            [key]: sanitizePeriodData(normalized.year, normalized.month, cloudData),
+          },
+        }))
+        hydratedPeriodKeys.add(key)
+        return
+      }
+    }
+
+    const safePeriods = ensurePeriodsMap(get().periods)
+    if (safePeriods[key]) {
       hydratedPeriodKeys.add(key)
       return
     }
+
+    const fresh = createEmptyPeriodData(normalized.year, normalized.month)
     if (getLocalPeriodVersion(key) !== localVersionAtStart) return
 
-    set((state: DashboardDataStore) => {
-      const safePeriods = ensurePeriodsMap(state.periods)
-      if (!safePeriods[key]) {
-        return state
-      }
-      return {
-        periods: {
-          ...safePeriods,
-          [key]: sanitizePeriodData(year, month, cloudData),
-        },
-      }
-    })
+    set((state) => ({
+      periods: {
+        ...ensurePeriodsMap(state.periods),
+        [key]: fresh,
+      },
+    }))
+
+    if (isCloudPersistenceEnabled()) {
+      void saveDashboardPeriodToCloud(normalized.year, normalized.month, fresh).catch((error) => {
+        console.error('[dashboard-data-store] Yeni dönem buluta yazılamadı:', error)
+      })
+    }
     hydratedPeriodKeys.add(key)
   })()
     .catch((error) => {
-      console.error('[dashboard-data-store] Bulut verisi yüklenemedi:', error)
+      console.error('[dashboard-data-store] Dönem remote-first yüklenemedi:', error)
+
+      const safePeriods = ensurePeriodsMap(get().periods)
+      if (safePeriods[key]) return
+
+      const fallback = createEmptyPeriodData(normalized.year, normalized.month)
+      set((state) => ({
+        periods: {
+          ...ensurePeriodsMap(state.periods),
+          [key]: fallback,
+        },
+      }))
     })
     .finally(() => {
-      periodHydrationTasks.delete(key)
+      periodEnsureTasks.delete(key)
     })
 
-  periodHydrationTasks.set(key, hydrationTask)
-  return hydrationTask
+  periodEnsureTasks.set(key, ensureTask)
+  return ensureTask
 }
 
 interface DashboardDataStore {
@@ -501,21 +789,7 @@ export const useDashboardDataStore = create<DashboardDataStore>()(
     (set, get) => ({
       periods: createInitialPeriods(),
       ensurePeriod: (year, month) => {
-        const key = getPeriodKey(year, month)
-        ensureLocalPeriodVersion(key)
-        const safePeriods = ensurePeriodsMap(get().periods)
-        const exists = Boolean(safePeriods[key])
-        if (!exists) {
-          const fresh = createSeedPeriodData(year, month)
-          set((state) => ({
-            periods: {
-              ...ensurePeriodsMap(state.periods),
-              [key]: fresh,
-            },
-          }))
-        }
-
-        void hydratePeriodFromCloud(year, month, set)
+        void ensurePeriodRemoteFirst(year, month, get, set)
       },
       updatePeriodData: (year, month, updater) => {
         const key = getPeriodKey(year, month)
@@ -523,7 +797,7 @@ export const useDashboardDataStore = create<DashboardDataStore>()(
         bumpLocalPeriodVersion(key)
         set((state) => {
           const safePeriods = ensurePeriodsMap(state.periods)
-          const current = safePeriods[key] ?? createSeedPeriodData(year, month)
+          const current = safePeriods[key] ?? createEmptyPeriodData(year, month)
           const updated = sanitizePeriodData(year, month, updater(current))
           return {
             periods: {
@@ -554,7 +828,7 @@ export const useDashboardDataStore = create<DashboardDataStore>()(
         const key = getPeriodKey(year, month)
         ensureLocalPeriodVersion(key)
         bumpLocalPeriodVersion(key)
-        const fresh = createSeedPeriodData(year, month)
+        const fresh = createEmptyPeriodData(year, month)
         set((state) => ({
           periods: {
             ...ensurePeriodsMap(state.periods),
@@ -565,9 +839,11 @@ export const useDashboardDataStore = create<DashboardDataStore>()(
       },
       resetAll: () => {
         clearPendingCloudSaves()
-        periodHydrationTasks.clear()
+        periodEnsureTasks.clear()
         periodLocalVersions.clear()
         hydratedPeriodKeys.clear()
+        localToCloudMigrationTask = null
+        safeStorageRemoveItem(LOCAL_TO_CLOUD_MIGRATION_FLAG)
         set({ periods: createInitialPeriods() })
       },
     }),

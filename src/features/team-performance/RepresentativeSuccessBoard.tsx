@@ -221,42 +221,6 @@ export function RepresentativeSuccessBoard({
           </CardContent>
         </Card>
       </div>
-
-      <Card>
-        <CardHeader className="pb-2">
-          <CardTitle className="text-base">Başarı Endeksi Hesabı ({top.record.name})</CardTitle>
-        </CardHeader>
-        <CardContent className="space-y-2 text-sm">
-          <div className="flex items-center justify-between rounded-lg border border-border/60 bg-white/70 px-3 py-2">
-            <span>Canlıya Alınan Hesap</span>
-            <span className="font-medium">
-              {top.record.liveCount}/{top.record.liveTarget} → {top.metrics.livePercent.toFixed(1)}% × %{weights.liveCount} = {top.metrics.weightedLive.toFixed(1)}
-            </span>
-          </div>
-          <div className="flex items-center justify-between rounded-lg border border-border/60 bg-white/70 px-3 py-2">
-            <span>Audit Skoru</span>
-            <span className="font-medium">
-              {top.record.auditScore.toFixed(1)}/100 → {top.metrics.auditPercent.toFixed(1)}% × %{weights.auditScore} = {top.metrics.weightedAudit.toFixed(1)}
-            </span>
-          </div>
-          <div className="flex items-center justify-between rounded-lg border border-border/60 bg-white/70 px-3 py-2">
-            <span>NPS Skoru</span>
-            <span className="font-medium">
-              {top.record.npsScore.toFixed(2)}/5 → {top.metrics.npsPercent.toFixed(1)}% × %{weights.npsScore} = {top.metrics.weightedNps.toFixed(1)}
-            </span>
-          </div>
-          <div className="flex items-center justify-between rounded-lg border border-border/60 bg-white/70 px-3 py-2">
-            <span>Toplantı Değerlendirmesi</span>
-            <span className="font-medium">
-              {top.record.meetingScore.toFixed(2)}/5 → {top.metrics.meetingPercent.toFixed(1)}% × %{weights.meetingScore} = {top.metrics.weightedMeeting.toFixed(1)}
-            </span>
-          </div>
-          <div className="flex items-center justify-between rounded-lg border border-primary/30 bg-primary/5 px-3 py-2 text-base font-semibold text-primary">
-            <span>Toplam Başarı Endeksi</span>
-            <span>{top.metrics.successIndex.toFixed(2)}</span>
-          </div>
-        </CardContent>
-      </Card>
     </div>
   )
 }

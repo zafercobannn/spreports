@@ -5,9 +5,10 @@ import type { TargetBrand } from '@/types/targets'
 
 interface TargetBrandsListProps {
   data: TargetBrand[]
+  showStatus?: boolean
 }
 
-export function TargetBrandsList({ data }: TargetBrandsListProps) {
+export function TargetBrandsList({ data, showStatus = true }: TargetBrandsListProps) {
   const columns: Column<TargetBrand>[] = [
     {
       key: 'name',
@@ -16,7 +17,7 @@ export function TargetBrandsList({ data }: TargetBrandsListProps) {
     },
     {
       key: 'sector',
-      header: 'Sektor',
+      header: 'Sektör',
     },
     {
       key: 'estimatedRevenue',
@@ -25,13 +26,16 @@ export function TargetBrandsList({ data }: TargetBrandsListProps) {
       sortable: true,
       render: (row) => formatCurrency(row.estimatedRevenue),
     },
-    {
+  ]
+
+  if (showStatus) {
+    columns.push({
       key: 'status',
       header: 'Durum',
       align: 'center',
       render: (row) => <StatusBadge status={row.status} />,
-    },
-  ]
+    })
+  }
 
   // eslint-disable-next-line @typescript-eslint/no-explicit-any
   return <DataTable data={data as any[]} columns={columns as any[]} />
