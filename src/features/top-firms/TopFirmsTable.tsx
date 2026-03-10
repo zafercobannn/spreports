@@ -1,6 +1,6 @@
 import { DataTable, type Column } from '@/components/data-display/DataTable'
 import { TrendIndicator } from '@/components/data-display/TrendIndicator'
-import { formatCurrency, formatNumber } from '@/utils/format'
+import { formatCurrency } from '@/utils/format'
 import { getTrendDirection } from '@/utils/calculations'
 import type { TopFirm } from '@/types/firms'
 
@@ -52,13 +52,6 @@ export function TopFirmsTable({ data }: TopFirmsTableProps) {
           size="md"
         />
       ),
-    },
-    {
-      key: 'shipmentSent',
-      header: 'Gönderi',
-      align: 'right',
-      sortable: true,
-      render: (row) => formatNumber(row.shipmentSent),
     },
   ]
 

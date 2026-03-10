@@ -1,6 +1,6 @@
 import { useEffect, useMemo, useState } from 'react'
 import { Link } from 'react-router-dom'
-import { ArrowLeft, LogOut, Plus, RotateCcw, Trash2, Upload } from 'lucide-react'
+import { ArrowLeft, Download, LogOut, Plus, RotateCcw, Trash2, Upload } from 'lucide-react'
 import { Button } from '@/components/ui/button'
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from '@/components/ui/card'
 import { Badge } from '@/components/ui/badge'
@@ -15,7 +15,8 @@ import type { DashboardPeriodData } from '@/types/dashboard-data'
 import type { TargetStatus } from '@/types/targets'
 import { TURKISH_MONTHS, getMonthName } from '@/utils/date-utils'
 import { calculateGpvChangePercent } from '@/utils/top-firm-metrics'
-import { parsePlatformExcelRows, parseTopFirmsExcelRows, readExcelRows } from '@/utils/excel-import'
+import { parsePlatformExcelRows, parseTopFirmsExcelRows, readSpreadsheetRows } from '@/utils/excel-import'
+import { downloadPlatformTemplate, downloadTopFirmsTemplate } from '@/utils/import-templates'
 
 const inputClassName =
   'h-9 w-full min-w-0 rounded-lg border border-border/80 bg-white/90 px-3 text-sm text-foreground outline-none transition focus:border-primary/60 focus:ring-2 focus:ring-primary/20'
@@ -59,7 +60,7 @@ function AdminWorkspace() {
     setImportError(null)
 
     try {
-      const rows = await readExcelRows(file)
+      const rows = await readSpreadsheetRows(file)
       const platforms = parsePlatformExcelRows(rows)
       patchPeriod((data) => ({
         ...data,
@@ -73,7 +74,7 @@ function AdminWorkspace() {
       }))
       setImportInfo(`${mode === 'sp' ? 'SP' : 'Premium Onboarding'} platform verisi yüklendi (${platforms.length} satır).`)
     } catch (error) {
-      setImportError(error instanceof Error ? error.message : 'Platform Excel dosyası yüklenemedi.')
+      setImportError(error instanceof Error ? error.message : 'Platform dosyası yüklenemedi.')
     }
   }
 
@@ -83,15 +84,15 @@ function AdminWorkspace() {
     setImportError(null)
 
     try {
-      const rows = await readExcelRows(file)
+      const rows = await readSpreadsheetRows(file)
       const firms = parseTopFirmsExcelRows(rows)
       patchPeriod((data) => ({
         ...data,
         topFirms: firms,
       }))
-      setImportInfo(`Top 15 Excel verisi yüklendi (${firms.length} firma).`)
+      setImportInfo(`Top 15 verisi yüklendi (${firms.length} firma).`)
     } catch (error) {
-      setImportError(error instanceof Error ? error.message : 'Top 15 Excel dosyası yüklenemedi.')
+      setImportError(error instanceof Error ? error.message : 'Top 15 dosyası yüklenemedi.')
     }
   }
 
@@ -338,12 +339,20 @@ function AdminWorkspace() {
                 <div className="flex flex-wrap items-center justify-between gap-2">
                   <h3 className="text-sm font-semibold">SP Önceki Platformlar</h3>
                   <div className="flex items-center gap-2">
+                    <Button
+                      size="sm"
+                      variant="outline"
+                      onClick={() => downloadPlatformTemplate('sp')}
+                    >
+                      <Download className="mr-1 h-3.5 w-3.5" />
+                      Şablon CSV
+                    </Button>
                     <label className="inline-flex cursor-pointer items-center gap-1 rounded-md border border-border/80 bg-white px-3 py-1.5 text-xs font-medium text-foreground hover:bg-muted/35">
                       <Upload className="h-3.5 w-3.5" />
-                      Excel Import
+                      CSV / Excel Import
                       <input
                         type="file"
-                        accept=".xlsx,.xls"
+                        accept=".csv,text/csv,.xlsx,.xls"
                         className="hidden"
                         onChange={(e) => {
                           void handlePlatformImport(e.target.files?.[0] ?? null, 'sp')
@@ -431,12 +440,20 @@ function AdminWorkspace() {
                 <div className="flex flex-wrap items-center justify-between gap-2">
                   <h3 className="text-sm font-semibold">Premium Onboarding Önceki Platformlar</h3>
                   <div className="flex items-center gap-2">
+                    <Button
+                      size="sm"
+                      variant="outline"
+                      onClick={() => downloadPlatformTemplate('premium')}
+                    >
+                      <Download className="mr-1 h-3.5 w-3.5" />
+                      Şablon CSV
+                    </Button>
                     <label className="inline-flex cursor-pointer items-center gap-1 rounded-md border border-border/80 bg-white px-3 py-1.5 text-xs font-medium text-foreground hover:bg-muted/35">
                       <Upload className="h-3.5 w-3.5" />
-                      Excel Import
+                      CSV / Excel Import
                       <input
                         type="file"
-                        accept=".xlsx,.xls"
+                        accept=".csv,text/csv,.xlsx,.xls"
                         className="hidden"
                         onChange={(e) => {
                           void handlePlatformImport(e.target.files?.[0] ?? null, 'premium')
@@ -526,16 +543,24 @@ function AdminWorkspace() {
         <Card>
           <CardHeader>
             <CardTitle>Top Firmalar</CardTitle>
-            <CardDescription>Top 15 tablosu - Excel import destekli</CardDescription>
+            <CardDescription>Top 15 tablosu - CSV ve Excel import destekli</CardDescription>
           </CardHeader>
           <CardContent className="space-y-3">
             <div className="flex flex-wrap items-center gap-2">
+              <Button
+                size="sm"
+                variant="outline"
+                onClick={downloadTopFirmsTemplate}
+              >
+                <Download className="mr-1 h-3.5 w-3.5" />
+                Şablon CSV
+              </Button>
               <label className="inline-flex cursor-pointer items-center gap-1 rounded-md border border-border/80 bg-white px-3 py-1.5 text-xs font-medium text-foreground hover:bg-muted/35">
                 <Upload className="h-3.5 w-3.5" />
-                Top 15 Excel Import
+                Top 15 CSV / Excel Import
                 <input
                   type="file"
-                  accept=".xlsx,.xls"
+                  accept=".csv,text/csv,.xlsx,.xls"
                   className="hidden"
                   onChange={(e) => {
                     void handleTopFirmsImport(e.target.files?.[0] ?? null)
@@ -553,7 +578,6 @@ function AdminWorkspace() {
                     <th className="px-2 py-2 text-left text-xs">GPV</th>
                     <th className="px-2 py-2 text-left text-xs">Önceki GPV</th>
                     <th className="px-2 py-2 text-left text-xs">Değişim %</th>
-                    <th className="px-2 py-2 text-left text-xs">Gönderi</th>
                     <th className="px-2 py-2 text-left text-xs">ikas Kargo Paket Adedi</th>
                     <th className="px-2 py-2 text-left text-xs">PARS Durumu</th>
                     <th className="px-2 py-2 text-left text-xs" />
@@ -613,20 +637,6 @@ function AdminWorkspace() {
                           <div className="h-8 rounded-md border border-border/70 bg-muted/35 px-2 text-right text-xs leading-8 font-medium text-foreground">
                             {gpvChange.toFixed(1)}%
                           </div>
-                        </td>
-                        <td className="px-2 py-2">
-                          <NumberInput
-                            className={smallInputClassName}
-                            value={firm.shipmentSent}
-                            onValueChange={(value) =>
-                              patchPeriod((data) => ({
-                                ...data,
-                                topFirms: data.topFirms.map((item, itemIdx) =>
-                                  itemIdx === idx ? { ...item, shipmentSent: value } : item
-                                ),
-                              }))
-                            }
-                          />
                         </td>
                         <td className="px-2 py-2">
                           <NumberInput
@@ -710,10 +720,7 @@ function AdminWorkspace() {
               Firma Ekle
             </Button>
             <p className="text-xs text-muted-foreground">
-              ikas kargo alanına o ay gönderilen paket adedini gir.
-            </p>
-            <p className="text-xs text-muted-foreground">
-              Excel zorunlu alanları: `Mağaza`, `GPV`, `Önceki Ay GPV`, `Gönderi`, `ikas Kargo Paket Adedi`, `PARS`.
+              CSV / Excel zorunlu alanları: `Mağaza`, `GPV`, `Önceki Ay GPV`, `Gönderi`, `ikas Kargo Paket Adedi`, `PARS`.
             </p>
           </CardContent>
         </Card>

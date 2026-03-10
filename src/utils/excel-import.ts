@@ -5,6 +5,43 @@ import { calculateGpvChangePercent } from '@/utils/top-firm-metrics'
 
 type RowRecord = Record<string, unknown>
 
+function detectDelimiter(line: string): ',' | ';' {
+  const commaCount = (line.match(/,/g) ?? []).length
+  const semicolonCount = (line.match(/;/g) ?? []).length
+  return semicolonCount > commaCount ? ';' : ','
+}
+
+function parseDelimitedLine(line: string, delimiter: ',' | ';'): string[] {
+  const values: string[] = []
+  let current = ''
+  let inQuotes = false
+
+  for (let i = 0; i < line.length; i++) {
+    const char = line[i]
+
+    if (char === '"') {
+      if (inQuotes && line[i + 1] === '"') {
+        current += '"'
+        i++
+      } else {
+        inQuotes = !inQuotes
+      }
+      continue
+    }
+
+    if (char === delimiter && !inQuotes) {
+      values.push(current.trim())
+      current = ''
+      continue
+    }
+
+    current += char
+  }
+
+  values.push(current.trim())
+  return values
+}
+
 function normalizeKey(value: string): string {
   return value
     .toLocaleLowerCase('tr-TR')
@@ -75,7 +112,7 @@ export async function readExcelRows(file: File): Promise<RowRecord[]> {
   const workbook = XLSX.read(buffer, { type: 'array' })
   const firstSheet = workbook.SheetNames[0]
   if (!firstSheet) {
-    throw new Error('Excel dosyasında sayfa bulunamadı.')
+    throw new Error('Dosyada sayfa bulunamadı.')
   }
 
   const rows = XLSX.utils.sheet_to_json<RowRecord>(workbook.Sheets[firstSheet], {
@@ -84,10 +121,62 @@ export async function readExcelRows(file: File): Promise<RowRecord[]> {
   })
 
   if (rows.length === 0) {
-    throw new Error('Excel dosyasında veri bulunamadı.')
+    throw new Error('Dosyada veri bulunamadı.')
   }
 
   return rows
+}
+
+async function readCsvRows(file: File): Promise<RowRecord[]> {
+  const text = await file.text()
+  const lines = text
+    .replace(/\r/g, '')
+    .split('\n')
+    .map((line) => line.trim())
+    .filter((line) => line.length > 0)
+
+  if (lines.length < 2) {
+    throw new Error('CSV dosyasında başlık ve en az 1 veri satırı olmalı.')
+  }
+
+  const headerLine = lines[0].replace(/^\uFEFF/, '')
+  const delimiter = detectDelimiter(headerLine)
+  const headers = parseDelimitedLine(headerLine, delimiter)
+    .map((header) => normalizeText(header))
+    .filter(Boolean)
+
+  if (headers.length === 0) {
+    throw new Error('CSV başlık satırı okunamadı.')
+  }
+
+  const rows = lines
+    .slice(1)
+    .map((line) => {
+      const values = parseDelimitedLine(line, delimiter)
+      const row: RowRecord = {}
+
+      headers.forEach((header, index) => {
+        row[header] = values[index] ?? ''
+      })
+
+      return row
+    })
+    .filter((row) => Object.values(row).some((value) => normalizeText(value).length > 0))
+
+  if (rows.length === 0) {
+    throw new Error('CSV dosyasında veri bulunamadı.')
+  }
+
+  return rows
+}
+
+function isCsvFile(file: File): boolean {
+  const normalizedName = file.name.trim().toLocaleLowerCase('en-US')
+  return normalizedName.endsWith('.csv') || file.type.toLocaleLowerCase('en-US').includes('csv')
+}
+
+export async function readSpreadsheetRows(file: File): Promise<RowRecord[]> {
+  return isCsvFile(file) ? readCsvRows(file) : readExcelRows(file)
 }
 
 export function parsePlatformExcelRows(rows: RowRecord[]): PlatformCount[] {
@@ -109,7 +198,7 @@ export function parsePlatformExcelRows(rows: RowRecord[]): PlatformCount[] {
     .filter((item): item is PlatformCount => item !== null)
 
   if (parsed.length === 0) {
-    throw new Error('Excel dosyasında geçerli "Altyapı" ve "Adet" satırı bulunamadı.')
+    throw new Error('Dosyada geçerli "Altyapı" ve "Adet" satırı bulunamadı.')
   }
 
   return parsed
@@ -171,7 +260,7 @@ export function parseTopFirmsExcelRows(rows: RowRecord[]): TopFirm[] {
     .filter((item): item is TopFirm => item !== null)
 
   if (parsed.length === 0) {
-    throw new Error('Excel dosyasında geçerli Top 15 satırı bulunamadı.')
+    throw new Error('Dosyada geçerli Top 15 satırı bulunamadı.')
   }
 
   const normalized = parsed

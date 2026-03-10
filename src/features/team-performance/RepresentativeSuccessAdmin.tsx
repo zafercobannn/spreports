@@ -1,11 +1,12 @@
 import { useRef, useState } from 'react'
-import { Upload } from 'lucide-react'
+import { Download, Upload } from 'lucide-react'
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from '@/components/ui/card'
 import { Button } from '@/components/ui/button'
 import { Badge } from '@/components/ui/badge'
 import { NumberInput } from '@/components/ui/number-input'
 import type { RepresentativeSuccessRecord, RepresentativeSuccessWeights } from '@/types/team'
 import { isCloudPersistenceEnabled } from '@/services/firebase/dashboard-period-service'
+import { downloadRepresentativeTemplate } from '@/utils/import-templates'
 import { parseRepresentativeCsv } from './representative-success-utils'
 
 interface RepresentativeSuccessAdminProps {
@@ -81,6 +82,14 @@ export function RepresentativeSuccessAdmin({
             <div className="flex flex-wrap items-center gap-2">
               <Button
                 size="sm"
+                variant="outline"
+                onClick={downloadRepresentativeTemplate}
+              >
+                <Download className="mr-2 h-4 w-4" />
+                Şablon CSV
+              </Button>
+              <Button
+                size="sm"
                 onClick={() => fileInputRef.current?.click()}
               >
                 <Upload className="mr-2 h-4 w-4" />
@@ -107,15 +116,14 @@ export function RepresentativeSuccessAdmin({
           <div className="rounded-xl border border-border/70 bg-white/65 p-3">
             <p className="mb-2 text-sm font-semibold text-foreground">CSV başlıkları</p>
             <div className="flex flex-wrap gap-2 text-xs">
-              <Badge variant="outline">Temsilci / MT Adı</Badge>
+              <Badge variant="outline">Temsilci</Badge>
               <Badge variant="outline">Canlıya Alınan Hesap Sayısı</Badge>
               <Badge variant="outline">Canlıya Alınan Hesap Sayısı Hedefi</Badge>
-              <Badge variant="outline">Canlıya Alınan Firma Adedi</Badge>
               <Badge variant="outline">Audit Puanı</Badge>
-              <Badge variant="outline">NPS Anket Skoru / Onboarding Anket Skoru</Badge>
-              <Badge variant="outline">Ortalama Canlıya Alma Süresi (gün) - opsiyonel</Badge>
+              <Badge variant="outline">NPS Anket Skoru</Badge>
+              <Badge variant="outline">Ortalama Canlıya Alma Süresi (gün)</Badge>
               <Badge variant="outline">Toplantı Değerlendirmesi</Badge>
-              <Badge variant="outline">Görsel URL (opsiyonel)</Badge>
+              <Badge variant="outline">Görsel URL</Badge>
             </div>
           </div>
         </CardContent>
