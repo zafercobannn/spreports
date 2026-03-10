@@ -4,6 +4,7 @@ import { ArrowLeft, LogOut, Plus, RotateCcw, Trash2, Upload } from 'lucide-react
 import { Button } from '@/components/ui/button'
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from '@/components/ui/card'
 import { Badge } from '@/components/ui/badge'
+import { NumberInput } from '@/components/ui/number-input'
 import { useAdminAuth } from '@/features/auth/AdminAuthProvider'
 import { AdminLoginExperience } from '@/features/auth/AdminLoginExperience'
 import { CohortHeatmapEditor } from '@/features/cohort/CohortHeatmapEditor'
@@ -195,70 +196,65 @@ function AdminWorkspace() {
             <div className="grid grid-cols-1 gap-3 md:grid-cols-2 lg:grid-cols-3">
               <label className="space-y-1">
                 <span className="text-xs text-muted-foreground">GPV</span>
-                <input
-                  type="number"
+                <NumberInput
                   className={inputClassName}
                   value={periodData.monthlyGPV.ikasGPV}
-                  onChange={(e) =>
+                  onValueChange={(value) =>
                     patchPeriod((data) => ({
                       ...data,
-                      monthlyGPV: { ...data.monthlyGPV, ikasGPV: toNumber(e.target.value) },
+                      monthlyGPV: { ...data.monthlyGPV, ikasGPV: value },
                     }))
                   }
                 />
               </label>
               <label className="space-y-1">
                 <span className="text-xs text-muted-foreground">SP GPV</span>
-                <input
-                  type="number"
+                <NumberInput
                   className={inputClassName}
                   value={periodData.monthlyGPV.spGPV}
-                  onChange={(e) =>
+                  onValueChange={(value) =>
                     patchPeriod((data) => ({
                       ...data,
-                      monthlyGPV: { ...data.monthlyGPV, spGPV: toNumber(e.target.value) },
+                      monthlyGPV: { ...data.monthlyGPV, spGPV: value },
                     }))
                   }
                 />
               </label>
               <label className="space-y-1">
                 <span className="text-xs text-muted-foreground">GPV Oranı (%)</span>
-                <input
-                  type="number"
+                <NumberInput
                   className={inputClassName}
                   value={periodData.monthlyGPV.gpvRatio}
-                  onChange={(e) =>
+                  onValueChange={(value) =>
                     patchPeriod((data) => ({
                       ...data,
-                      monthlyGPV: { ...data.monthlyGPV, gpvRatio: toNumber(e.target.value) },
+                      monthlyGPV: { ...data.monthlyGPV, gpvRatio: value },
                     }))
                   }
                 />
               </label>
               <label className="space-y-1">
                 <span className="text-xs text-muted-foreground">Canlı Hesap Sayısı</span>
-                <input
-                  type="number"
+                <NumberInput
                   className={inputClassName}
                   value={periodData.monthlyGPV.liveAccountCount}
-                  onChange={(e) =>
+                  onValueChange={(value) =>
                     patchPeriod((data) => ({
                       ...data,
-                      monthlyGPV: { ...data.monthlyGPV, liveAccountCount: toNumber(e.target.value) },
+                      monthlyGPV: { ...data.monthlyGPV, liveAccountCount: value },
                     }))
                   }
                 />
               </label>
               <label className="space-y-1">
                 <span className="text-xs text-muted-foreground">Canlı SP (en az 1 ödeme)</span>
-                <input
-                  type="number"
+                <NumberInput
                   className={inputClassName}
                   value={periodData.monthlyGPV.liveSPCount}
-                  onChange={(e) =>
+                  onValueChange={(value) =>
                     patchPeriod((data) => ({
                       ...data,
-                      monthlyGPV: { ...data.monthlyGPV, liveSPCount: toNumber(e.target.value) },
+                      monthlyGPV: { ...data.monthlyGPV, liveSPCount: value },
                     }))
                   }
                 />
@@ -274,30 +270,28 @@ function AdminWorkspace() {
               </label>
               <label className="space-y-1">
                 <span className="text-xs text-muted-foreground">Toplam SP</span>
-                <input
-                  type="number"
+                <NumberInput
                   className={inputClassName}
                   value={periodData.monthlyGPV.totalSP}
-                  onChange={(e) =>
+                  onValueChange={(value) =>
                     patchPeriod((data) => ({
                       ...data,
-                      monthlyGPV: { ...data.monthlyGPV, totalSP: toNumber(e.target.value) },
+                      monthlyGPV: { ...data.monthlyGPV, totalSP: value },
                     }))
                   }
                 />
               </label>
               <label className="space-y-1">
                 <span className="text-xs text-muted-foreground">Premium Onboarding Live Sayısı</span>
-                <input
-                  type="number"
+                <NumberInput
                   className={inputClassName}
                   value={periodData.monthlyGPV.premiumOnboardingLiveCount}
-                  onChange={(e) =>
+                  onValueChange={(value) =>
                     patchPeriod((data) => ({
                       ...data,
                       monthlyGPV: {
                         ...data.monthlyGPV,
-                        premiumOnboardingLiveCount: toNumber(e.target.value),
+                        premiumOnboardingLiveCount: value,
                       },
                     }))
                   }
@@ -305,17 +299,16 @@ function AdminWorkspace() {
               </label>
               <label className="space-y-1">
                 <span className="text-xs text-muted-foreground">Premium Onboarding Ort. Canlıya Alma (gün)</span>
-                <input
-                  type="number"
+                <NumberInput
                   step="0.1"
                   className={inputClassName}
                   value={periodData.monthlyGPV.premiumOnboardingAvgGoLiveDurationDays}
-                  onChange={(e) =>
+                  onValueChange={(value) =>
                     patchPeriod((data) => ({
                       ...data,
                       monthlyGPV: {
                         ...data.monthlyGPV,
-                        premiumOnboardingAvgGoLiveDurationDays: toNumber(e.target.value),
+                        premiumOnboardingAvgGoLiveDurationDays: value,
                       },
                     }))
                   }
@@ -323,17 +316,16 @@ function AdminWorkspace() {
               </label>
               <label className="space-y-1">
                 <span className="text-xs text-muted-foreground">Scale Plus Ort. Canlıya Alma (gün)</span>
-                <input
-                  type="number"
+                <NumberInput
                   step="0.1"
                   className={inputClassName}
                   value={periodData.monthlyGPV.scalePlusAvgGoLiveDurationDays}
-                  onChange={(e) =>
+                  onValueChange={(value) =>
                     patchPeriod((data) => ({
                       ...data,
                       monthlyGPV: {
                         ...data.monthlyGPV,
-                        scalePlusAvgGoLiveDurationDays: toNumber(e.target.value),
+                        scalePlusAvgGoLiveDurationDays: value,
                       },
                     }))
                   }
@@ -399,17 +391,16 @@ function AdminWorkspace() {
                         }
                         placeholder="Altyapı adı"
                       />
-                      <input
-                        type="number"
+                      <NumberInput
                         className={inputClassName}
                         value={platform.count}
-                        onChange={(e) =>
+                        onValueChange={(value) =>
                           patchPeriod((data) => ({
                             ...data,
                             monthlyGPV: {
                               ...data.monthlyGPV,
                               previousPlatformsSP: data.monthlyGPV.previousPlatformsSP.map((p, pIdx) =>
-                                pIdx === idx ? { ...p, count: toNumber(e.target.value) } : p
+                                pIdx === idx ? { ...p, count: value } : p
                               ),
                             },
                           }))
@@ -493,17 +484,16 @@ function AdminWorkspace() {
                         }
                         placeholder="Altyapı adı"
                       />
-                      <input
-                        type="number"
+                      <NumberInput
                         className={inputClassName}
                         value={platform.count}
-                        onChange={(e) =>
+                        onValueChange={(value) =>
                           patchPeriod((data) => ({
                             ...data,
                             monthlyGPV: {
                               ...data.monthlyGPV,
                               previousPlatformsPremiumOnboarding: data.monthlyGPV.previousPlatformsPremiumOnboarding.map((p, pIdx) =>
-                                pIdx === idx ? { ...p, count: toNumber(e.target.value) } : p
+                                pIdx === idx ? { ...p, count: value } : p
                               ),
                             },
                           }))
@@ -590,31 +580,29 @@ function AdminWorkspace() {
                           />
                         </td>
                         <td className="px-2 py-2">
-                          <input
-                            type="number"
+                          <NumberInput
                             className={smallInputClassName}
                             value={firm.gpv}
-                            onChange={(e) =>
+                            onValueChange={(value) =>
                               patchPeriod((data) => ({
                                 ...data,
                                 topFirms: data.topFirms.map((item, itemIdx) =>
-                                  itemIdx === idx ? { ...item, gpv: toNumber(e.target.value) } : item
+                                  itemIdx === idx ? { ...item, gpv: value } : item
                                 ),
                               }))
                             }
                           />
                         </td>
                         <td className="px-2 py-2">
-                          <input
-                            type="number"
+                          <NumberInput
                             className={smallInputClassName}
                             value={firm.previousMonthGPV}
-                            onChange={(e) =>
+                            onValueChange={(value) =>
                               patchPeriod((data) => ({
                                 ...data,
                                 topFirms: data.topFirms.map((item, itemIdx) =>
                                   itemIdx === idx
-                                    ? { ...item, previousMonthGPV: toNumber(e.target.value) }
+                                    ? { ...item, previousMonthGPV: value }
                                     : item
                                 ),
                               }))
@@ -627,31 +615,29 @@ function AdminWorkspace() {
                           </div>
                         </td>
                         <td className="px-2 py-2">
-                          <input
-                            type="number"
+                          <NumberInput
                             className={smallInputClassName}
                             value={firm.shipmentSent}
-                            onChange={(e) =>
+                            onValueChange={(value) =>
                               patchPeriod((data) => ({
                                 ...data,
                                 topFirms: data.topFirms.map((item, itemIdx) =>
-                                  itemIdx === idx ? { ...item, shipmentSent: toNumber(e.target.value) } : item
+                                  itemIdx === idx ? { ...item, shipmentSent: value } : item
                                 ),
                               }))
                             }
                           />
                         </td>
                         <td className="px-2 py-2">
-                          <input
-                            type="number"
+                          <NumberInput
                             className={smallInputClassName}
                             value={firm.ikasCargoValue}
-                            onChange={(e) =>
+                            onValueChange={(value) =>
                               patchPeriod((data) => ({
                                 ...data,
                                 topFirms: data.topFirms.map((item, itemIdx) =>
                                   itemIdx === idx
-                                    ? { ...item, ikasCargoValue: Math.max(0, toNumber(e.target.value)) }
+                                    ? { ...item, ikasCargoValue: Math.max(0, value) }
                                     : item
                                 ),
                               }))
@@ -794,15 +780,14 @@ function AdminWorkspace() {
                   }
                   placeholder="Sektör"
                 />
-                <input
-                  type="number"
+                <NumberInput
                   className={inputClassName}
                   value={target.estimatedRevenue}
-                  onChange={(e) =>
+                  onValueChange={(value) =>
                     patchPeriod((data) => ({
                       ...data,
                       targets: data.targets.map((item, itemIdx) =>
-                        itemIdx === idx ? { ...item, estimatedRevenue: toNumber(e.target.value) } : item
+                        itemIdx === idx ? { ...item, estimatedRevenue: value } : item
                       ),
                     }))
                   }

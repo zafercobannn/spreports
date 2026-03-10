@@ -3,6 +3,7 @@ import { Upload } from 'lucide-react'
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from '@/components/ui/card'
 import { Button } from '@/components/ui/button'
 import { Badge } from '@/components/ui/badge'
+import { NumberInput } from '@/components/ui/number-input'
 import type { RepresentativeSuccessRecord, RepresentativeSuccessWeights } from '@/types/team'
 import { isCloudPersistenceEnabled } from '@/services/firebase/dashboard-period-service'
 import { parseRepresentativeCsv } from './representative-success-utils'
@@ -18,11 +19,6 @@ interface RepresentativeSuccessAdminProps {
 
 const inputClassName =
   'h-9 w-full min-w-0 rounded-lg border border-border/80 bg-white/90 px-3 text-sm text-foreground outline-none transition focus:border-primary/60 focus:ring-2 focus:ring-primary/20'
-
-function toNumber(value: string): number {
-  const parsed = Number(value.replace(',', '.'))
-  return Number.isFinite(parsed) ? parsed : 0
-}
 
 export function RepresentativeSuccessAdmin({
   data,
@@ -148,16 +144,15 @@ export function RepresentativeSuccessAdmin({
                   <div className="flex h-9 items-center rounded-lg border border-border/80 bg-muted/20 px-3 text-sm font-medium text-foreground">
                     {item.name || `Temsilci ${index + 1}`}
                   </div>
-                  <input
-                    type="number"
+                  <NumberInput
                     step="0.1"
                     min={0}
                     className={inputClassName}
                     value={item.avgGoLiveDurationDays}
-                    onChange={(e) => {
+                    onValueChange={(value) => {
                       const next = data.map((record, recordIndex) => (
                         recordIndex === index
-                          ? { ...record, avgGoLiveDurationDays: Math.max(0, toNumber(e.target.value)) }
+                          ? { ...record, avgGoLiveDurationDays: Math.max(0, value) }
                           : record
                       ))
                       onDataChange(next)
@@ -186,38 +181,34 @@ export function RepresentativeSuccessAdmin({
           <div className="grid grid-cols-1 gap-3 md:grid-cols-2 xl:grid-cols-4">
             <label className="space-y-1">
               <span className="text-xs text-muted-foreground">Canlıya Alınan Hesap</span>
-              <input
-                type="number"
+              <NumberInput
                 className={inputClassName}
                 value={weights.liveCount}
-                onChange={(e) => onWeightsChange({ ...weights, liveCount: Math.max(0, toNumber(e.target.value)) })}
+                onValueChange={(value) => onWeightsChange({ ...weights, liveCount: Math.max(0, value) })}
               />
             </label>
             <label className="space-y-1">
               <span className="text-xs text-muted-foreground">Audit</span>
-              <input
-                type="number"
+              <NumberInput
                 className={inputClassName}
                 value={weights.auditScore}
-                onChange={(e) => onWeightsChange({ ...weights, auditScore: Math.max(0, toNumber(e.target.value)) })}
+                onValueChange={(value) => onWeightsChange({ ...weights, auditScore: Math.max(0, value) })}
               />
             </label>
             <label className="space-y-1">
               <span className="text-xs text-muted-foreground">NPS</span>
-              <input
-                type="number"
+              <NumberInput
                 className={inputClassName}
                 value={weights.npsScore}
-                onChange={(e) => onWeightsChange({ ...weights, npsScore: Math.max(0, toNumber(e.target.value)) })}
+                onValueChange={(value) => onWeightsChange({ ...weights, npsScore: Math.max(0, value) })}
               />
             </label>
             <label className="space-y-1">
               <span className="text-xs text-muted-foreground">Toplantı</span>
-              <input
-                type="number"
+              <NumberInput
                 className={inputClassName}
                 value={weights.meetingScore}
-                onChange={(e) => onWeightsChange({ ...weights, meetingScore: Math.max(0, toNumber(e.target.value)) })}
+                onValueChange={(value) => onWeightsChange({ ...weights, meetingScore: Math.max(0, value) })}
               />
             </label>
           </div>

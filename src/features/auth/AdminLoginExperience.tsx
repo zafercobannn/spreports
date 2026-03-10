@@ -105,10 +105,7 @@ export function AdminLoginExperience() {
             </div>
 
             <div className="max-w-xl space-y-4">
-              <p className="text-sm font-medium tracking-[0.28em] text-primary/70 uppercase">Üyelik Girişi</p>
-              <h1 className="text-4xl font-semibold tracking-tight text-foreground sm:text-5xl">
-                Yönetici paneline kontrollü ve modern bir giriş akışı.
-              </h1>
+              <h1 className="text-4xl font-semibold tracking-tight text-foreground sm:text-5xl">Üyelik Girişi</h1>
               <p className="max-w-lg text-base leading-7 text-muted-foreground">
                 Admin bölümüne girildiğinde e-posta doğrulamalı oturum ekranı açılır. Yetkisiz hesaplar
                 dashboard verisine erişemez, diğer ekranlar kilitli kalır.
