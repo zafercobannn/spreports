@@ -3,9 +3,9 @@ import { Plus, Trash2 } from 'lucide-react'
 import { Button } from '@/components/ui/button'
 import { NumberInput } from '@/components/ui/number-input'
 import { AdminInlineStatus } from '@/features/admin/AdminInlineStatus'
+import { AdminSidebar } from '@/features/admin/AdminSidebar'
 import { AdminSectionCard } from '@/features/admin/AdminSectionCard'
-import { AdminSectionChips } from '@/features/admin/AdminSectionChips'
-import { AdminWorkspaceHeader } from '@/features/admin/AdminWorkspaceHeader'
+import { AdminSyncBar } from '@/features/admin/AdminSyncBar'
 import { useAdminAuth } from '@/features/auth/AdminAuthProvider'
 import { AdminLoginExperience } from '@/features/auth/AdminLoginExperience'
 import { CohortHeatmapEditor } from '@/features/cohort/CohortHeatmapEditor'
@@ -623,351 +623,357 @@ function AdminWorkspace() {
 
   return (
     <div className="min-h-screen bg-background px-4 py-5 sm:px-6 lg:px-8">
-      <div className="mx-auto max-w-[1680px] space-y-4 pb-10">
-        <div className="sticky top-3 z-30 space-y-3">
-          <AdminWorkspaceHeader
-            userEmail={userEmail}
-            year={editYear}
-            month={editMonth}
+      <div className="mx-auto grid max-w-[1680px] gap-4 pb-10 lg:grid-cols-[320px_minmax(0,1fr)] lg:items-start">
+        <aside className="space-y-4">
+          <AdminSidebar
+            activeSection={activeSection}
+            importControls={importControls}
+            isSaving={cloudStatus === 'saving'}
             months={TURKISH_MONTHS}
-            periodKey={periodKey}
-            cloudSyncEnabled={cloudSyncEnabled}
-            cloudStatusLabel={getCloudSyncLabel(cloudStatus)}
-            cloudStatusVariant={getCloudSyncBadgeVariant(cloudStatus)}
-            lastSavedAtLabel={lastSavedAtLabel}
-            syncError={cloudSync?.lastError}
-            onYearChange={(value) => setEditYear(Math.max(2020, Math.round(value || editYear)))}
             onMonthChange={(value) => setEditMonth(Math.min(12, Math.max(1, value)))}
+            onResetAll={resetAll}
+            onResetPeriod={() => resetPeriod(editYear, editMonth)}
             onSaveNow={() => {
               void savePeriodNow(editYear, editMonth)
             }}
+            onSelectSection={handleSelectSection}
             onSignOut={() => {
               void signOut()
             }}
-            onResetPeriod={() => resetPeriod(editYear, editMonth)}
-            onResetAll={resetAll}
-            isSaving={cloudStatus === 'saving'}
-            importControls={importControls}
+            onYearChange={(value) => setEditYear(Math.max(2020, Math.round(value || editYear)))}
+            sections={adminSectionItems}
+            userEmail={userEmail}
+            year={editYear}
+            month={editMonth}
           />
-          <AdminSectionChips
-            items={adminSectionItems}
-            activeId={activeSection}
-            onSelect={handleSelectSection}
-          />
+        </aside>
+
+        <div className="space-y-4">
+          <div className="sticky top-3 z-30">
+            <AdminSyncBar
+              periodKey={periodKey}
+              cloudSyncEnabled={cloudSyncEnabled}
+              cloudStatusLabel={getCloudSyncLabel(cloudStatus)}
+              cloudStatusVariant={getCloudSyncBadgeVariant(cloudStatus)}
+              lastSavedAtLabel={lastSavedAtLabel}
+              syncError={cloudSync?.lastError}
+            />
+          </div>
+
           <AdminInlineStatus message={importError ?? importInfo} tone={importError ? 'error' : 'success'} />
-        </div>
 
-        <section
-          ref={setSectionRef('general')}
-          data-section="general"
-          className="scroll-mt-44 space-y-4 lg:scroll-mt-56"
-        >
-          <AdminSectionCard
-            eyebrow="Genel"
-            title="Aylık Genel Veriler"
-            description="En sık düzenlenen temel metrikler ve platform dağılımı."
+          <section
+            ref={setSectionRef('general')}
+            data-section="general"
+            className="scroll-mt-24 space-y-4 lg:scroll-mt-28"
           >
-            <div className="space-y-5">
-              <div className="grid gap-4 xl:grid-cols-[minmax(0,1.05fr)_minmax(0,0.95fr)]">
-                <FieldGroup label="GPV ve Hacim">
-                  <div className="grid grid-cols-1 gap-3 md:grid-cols-2 xl:grid-cols-2">
-                    <MetricField
-                      label="GPV"
-                      value={periodData.monthlyGPV.ikasGPV}
-                      onChange={(value) =>
-                        patchPeriod((data) => ({
-                          ...data,
-                          monthlyGPV: { ...data.monthlyGPV, ikasGPV: value },
-                        }))
-                      }
-                    />
-                    <MetricField
-                      label="SP GPV"
-                      value={periodData.monthlyGPV.spGPV}
-                      onChange={(value) =>
-                        patchPeriod((data) => ({
-                          ...data,
-                          monthlyGPV: { ...data.monthlyGPV, spGPV: value },
-                        }))
-                      }
-                    />
-                    <MetricField
-                      label="GPV Oranı (%)"
-                      value={periodData.monthlyGPV.gpvRatio}
-                      onChange={(value) =>
-                        patchPeriod((data) => ({
-                          ...data,
-                          monthlyGPV: { ...data.monthlyGPV, gpvRatio: value },
-                        }))
-                      }
-                    />
-                    <MetricField
-                      label="Toplam SP"
-                      value={periodData.monthlyGPV.totalSP}
-                      onChange={(value) =>
-                        patchPeriod((data) => ({
-                          ...data,
-                          monthlyGPV: { ...data.monthlyGPV, totalSP: value },
-                        }))
-                      }
-                    />
-                  </div>
-                </FieldGroup>
+            <AdminSectionCard
+              eyebrow="Genel"
+              title="Aylık Genel Veriler"
+              description="En sık düzenlenen temel metrikler ve platform dağılımı."
+            >
+              <div className="space-y-5">
+                <div className="grid gap-4 xl:grid-cols-[minmax(0,1.05fr)_minmax(0,0.95fr)]">
+                  <FieldGroup label="GPV ve Hacim">
+                    <div className="grid grid-cols-1 gap-3 md:grid-cols-2 xl:grid-cols-2">
+                      <MetricField
+                        label="GPV"
+                        value={periodData.monthlyGPV.ikasGPV}
+                        onChange={(value) =>
+                          patchPeriod((data) => ({
+                            ...data,
+                            monthlyGPV: { ...data.monthlyGPV, ikasGPV: value },
+                          }))
+                        }
+                      />
+                      <MetricField
+                        label="SP GPV"
+                        value={periodData.monthlyGPV.spGPV}
+                        onChange={(value) =>
+                          patchPeriod((data) => ({
+                            ...data,
+                            monthlyGPV: { ...data.monthlyGPV, spGPV: value },
+                          }))
+                        }
+                      />
+                      <MetricField
+                        label="GPV Oranı (%)"
+                        value={periodData.monthlyGPV.gpvRatio}
+                        onChange={(value) =>
+                          patchPeriod((data) => ({
+                            ...data,
+                            monthlyGPV: { ...data.monthlyGPV, gpvRatio: value },
+                          }))
+                        }
+                      />
+                      <MetricField
+                        label="Toplam SP"
+                        value={periodData.monthlyGPV.totalSP}
+                        onChange={(value) =>
+                          patchPeriod((data) => ({
+                            ...data,
+                            monthlyGPV: { ...data.monthlyGPV, totalSP: value },
+                          }))
+                        }
+                      />
+                    </div>
+                  </FieldGroup>
 
-                <FieldGroup label="Canlı Hesap / Onboarding">
-                  <div className="grid grid-cols-1 gap-3 md:grid-cols-2 xl:grid-cols-2">
-                    <MetricField
-                      label="Canlı Hesap Sayısı"
-                      value={periodData.monthlyGPV.liveAccountCount}
-                      onChange={(value) =>
+                  <FieldGroup label="Canlı Hesap / Onboarding">
+                    <div className="grid grid-cols-1 gap-3 md:grid-cols-2 xl:grid-cols-2">
+                      <MetricField
+                        label="Canlı Hesap Sayısı"
+                        value={periodData.monthlyGPV.liveAccountCount}
+                        onChange={(value) =>
+                          patchPeriod((data) => ({
+                            ...data,
+                            monthlyGPV: { ...data.monthlyGPV, liveAccountCount: value },
+                          }))
+                        }
+                      />
+                      <MetricField
+                        label="Canlı SP (en az 1 ödeme)"
+                        value={periodData.monthlyGPV.liveSPCount}
+                        onChange={(value) =>
+                          patchPeriod((data) => ({
+                            ...data,
+                            monthlyGPV: { ...data.monthlyGPV, liveSPCount: value },
+                          }))
+                        }
+                      />
+                      <ReadOnlyMetricField
+                        label="Aylık Live Sayısı"
+                        value={periodData.monthlyGPV.monthlyLiveCount}
+                        helper="Canlı SP + Premium Onboarding Live"
+                      />
+                      <MetricField
+                        label="Premium Onboarding Live"
+                        value={periodData.monthlyGPV.premiumOnboardingLiveCount}
+                        onChange={(value) =>
+                          patchPeriod((data) => ({
+                            ...data,
+                            monthlyGPV: { ...data.monthlyGPV, premiumOnboardingLiveCount: value },
+                          }))
+                        }
+                      />
+                      <MetricField
+                        label="Premium Onboarding Ort. Süre (gün)"
+                        value={periodData.monthlyGPV.premiumOnboardingAvgGoLiveDurationDays}
+                        onChange={(value) =>
+                          patchPeriod((data) => ({
+                            ...data,
+                            monthlyGPV: {
+                              ...data.monthlyGPV,
+                              premiumOnboardingAvgGoLiveDurationDays: value,
+                            },
+                          }))
+                        }
+                        step="0.1"
+                      />
+                      <MetricField
+                        label="Scale Plus Ort. Süre (gün)"
+                        value={periodData.monthlyGPV.scalePlusAvgGoLiveDurationDays}
+                        onChange={(value) =>
+                          patchPeriod((data) => ({
+                            ...data,
+                            monthlyGPV: {
+                              ...data.monthlyGPV,
+                              scalePlusAvgGoLiveDurationDays: value,
+                            },
+                          }))
+                        }
+                        step="0.1"
+                      />
+                    </div>
+                  </FieldGroup>
+                </div>
+
+                <div className="space-y-4">
+                  <div className="flex flex-col gap-2 sm:flex-row sm:items-end sm:justify-between">
+                    <div>
+                      <p className="text-[11px] font-semibold tracking-[0.18em] text-muted-foreground uppercase">Platform Dağılımı</p>
+                      <p className="mt-2 text-sm text-muted-foreground">
+                        Platform listelerini elle düzenleyebilir veya soldaki panelden toplu içe aktarabilirsin.
+                      </p>
+                    </div>
+                  </div>
+                  <div className="grid gap-4 xl:grid-cols-2">
+                    <PlatformEditorPanel
+                      title="SP Önceki Platformlar"
+                      items={periodData.monthlyGPV.previousPlatformsSP}
+                      onItemsChange={(next) =>
                         patchPeriod((data) => ({
                           ...data,
-                          monthlyGPV: { ...data.monthlyGPV, liveAccountCount: value },
+                          monthlyGPV: { ...data.monthlyGPV, previousPlatformsSP: next },
                         }))
                       }
                     />
-                    <MetricField
-                      label="Canlı SP (en az 1 ödeme)"
-                      value={periodData.monthlyGPV.liveSPCount}
-                      onChange={(value) =>
+                    <PlatformEditorPanel
+                      title="Premium Onboarding Önceki Platformlar"
+                      items={periodData.monthlyGPV.previousPlatformsPremiumOnboarding}
+                      onItemsChange={(next) =>
                         patchPeriod((data) => ({
                           ...data,
-                          monthlyGPV: { ...data.monthlyGPV, liveSPCount: value },
+                          monthlyGPV: { ...data.monthlyGPV, previousPlatformsPremiumOnboarding: next },
                         }))
                       }
-                    />
-                    <ReadOnlyMetricField
-                      label="Aylık Live Sayısı"
-                      value={periodData.monthlyGPV.monthlyLiveCount}
-                      helper="Canlı SP + Premium Onboarding Live"
-                    />
-                    <MetricField
-                      label="Premium Onboarding Live"
-                      value={periodData.monthlyGPV.premiumOnboardingLiveCount}
-                      onChange={(value) =>
-                        patchPeriod((data) => ({
-                          ...data,
-                          monthlyGPV: { ...data.monthlyGPV, premiumOnboardingLiveCount: value },
-                        }))
-                      }
-                    />
-                    <MetricField
-                      label="Premium Onboarding Ort. Süre (gün)"
-                      value={periodData.monthlyGPV.premiumOnboardingAvgGoLiveDurationDays}
-                      onChange={(value) =>
-                        patchPeriod((data) => ({
-                          ...data,
-                          monthlyGPV: {
-                            ...data.monthlyGPV,
-                            premiumOnboardingAvgGoLiveDurationDays: value,
-                          },
-                        }))
-                      }
-                      step="0.1"
-                    />
-                    <MetricField
-                      label="Scale Plus Ort. Süre (gün)"
-                      value={periodData.monthlyGPV.scalePlusAvgGoLiveDurationDays}
-                      onChange={(value) =>
-                        patchPeriod((data) => ({
-                          ...data,
-                          monthlyGPV: {
-                            ...data.monthlyGPV,
-                            scalePlusAvgGoLiveDurationDays: value,
-                          },
-                        }))
-                      }
-                      step="0.1"
                     />
                   </div>
-                </FieldGroup>
+                </div>
               </div>
+            </AdminSectionCard>
+          </section>
 
+          <section
+            ref={setSectionRef('top-firms')}
+            data-section="top-firms"
+            className="scroll-mt-24 space-y-4 lg:scroll-mt-28"
+          >
+            <AdminSectionCard
+              eyebrow="Ticari Görünüm"
+              title="Top Firmalar"
+              description="Top 15 listesini satır bazında hızlıca düzenle."
+              actions={(
+                <Button
+                  variant="outline"
+                  size="sm"
+                  className="rounded-full"
+                  onClick={() =>
+                    patchPeriod((data) => ({
+                      ...data,
+                      topFirms: [
+                        ...data.topFirms,
+                        {
+                          rank: data.topFirms.length + 1,
+                          name: '',
+                          gpv: 0,
+                          previousMonthGPV: 0,
+                          gpvChange: 0,
+                          shipmentSent: 0,
+                          ikasCargoValue: 0,
+                          usesPars: false,
+                        },
+                      ],
+                    }))
+                  }
+                >
+                  <Plus className="mr-1 h-3.5 w-3.5" />
+                  Firma Ekle
+                </Button>
+              )}
+            >
               <div className="space-y-4">
-                <div className="flex flex-col gap-2 sm:flex-row sm:items-end sm:justify-between">
-                  <div>
-                    <p className="text-[11px] font-semibold tracking-[0.18em] text-muted-foreground uppercase">Platform Dağılımı</p>
-                    <p className="mt-2 text-sm text-muted-foreground">
-                      Platform listelerini elle düzenleyebilir veya üst bardan toplu içe aktarabilirsin.
-                    </p>
-                  </div>
-                </div>
-                <div className="grid gap-4 xl:grid-cols-2">
-                  <PlatformEditorPanel
-                    title="SP Önceki Platformlar"
-                    items={periodData.monthlyGPV.previousPlatformsSP}
-                    onItemsChange={(next) =>
-                      patchPeriod((data) => ({
-                        ...data,
-                        monthlyGPV: { ...data.monthlyGPV, previousPlatformsSP: next },
-                      }))
-                    }
-                  />
-                  <PlatformEditorPanel
-                    title="Premium Onboarding Önceki Platformlar"
-                    items={periodData.monthlyGPV.previousPlatformsPremiumOnboarding}
-                    onItemsChange={(next) =>
-                      patchPeriod((data) => ({
-                        ...data,
-                        monthlyGPV: { ...data.monthlyGPV, previousPlatformsPremiumOnboarding: next },
-                      }))
-                    }
-                  />
-                </div>
+                <TopFirmsEditor
+                  data={periodData.topFirms}
+                  onChange={(next) =>
+                    patchPeriod((data) => ({
+                      ...data,
+                      topFirms: next.map((item, index) => ({
+                        ...item,
+                        rank: index + 1,
+                        gpvChange: calculateGpvChangePercent(item.gpv, item.previousMonthGPV),
+                      })),
+                    }))
+                  }
+                />
+                <p className="text-xs text-muted-foreground">
+                  CSV / Excel zorunlu alanları: `Mağaza`, `GPV`, `Önceki Ay GPV`, `Gönderi`, `ikas Kargo Paket Adedi`, `PARS`.
+                </p>
               </div>
-            </div>
-          </AdminSectionCard>
-        </section>
+            </AdminSectionCard>
+          </section>
 
-        <section
-          ref={setSectionRef('top-firms')}
-          data-section="top-firms"
-          className="scroll-mt-44 space-y-4 lg:scroll-mt-56"
-        >
-          <AdminSectionCard
-            eyebrow="Ticari Görünüm"
-            title="Top Firmalar"
-            description="Top 15 listesini satır bazında hızlıca düzenle."
-            actions={(
-              <Button
-                variant="outline"
-                size="sm"
-                className="rounded-full"
-                onClick={() =>
-                  patchPeriod((data) => ({
-                    ...data,
-                    topFirms: [
-                      ...data.topFirms,
-                      {
-                        rank: data.topFirms.length + 1,
-                        name: '',
-                        gpv: 0,
-                        previousMonthGPV: 0,
-                        gpvChange: 0,
-                        shipmentSent: 0,
-                        ikasCargoValue: 0,
-                        usesPars: false,
-                      },
-                    ],
-                  }))
-                }
-              >
-                <Plus className="mr-1 h-3.5 w-3.5" />
-                Firma Ekle
-              </Button>
-            )}
+          <section
+            ref={setSectionRef('targets')}
+            data-section="targets"
+            className="scroll-mt-24 space-y-4 lg:scroll-mt-28"
           >
-            <div className="space-y-4">
-              <TopFirmsEditor
-                data={periodData.topFirms}
+            <AdminSectionCard
+              eyebrow="Pipeline"
+              title="Hedef Markalar"
+              description="Marka listesini daha okunaklı satır düzeninde yönet."
+              actions={(
+                <Button
+                  variant="outline"
+                  size="sm"
+                  className="rounded-full"
+                  onClick={() =>
+                    patchPeriod((data) => ({
+                      ...data,
+                      targets: [...data.targets, { name: '', sector: '', estimatedRevenue: 0, status: 'not-live' }],
+                    }))
+                  }
+                >
+                  <Plus className="mr-1 h-3.5 w-3.5" />
+                  Marka Ekle
+                </Button>
+              )}
+            >
+              <TargetsEditor
+                data={periodData.targets}
                 onChange={(next) =>
                   patchPeriod((data) => ({
                     ...data,
-                    topFirms: next.map((item, index) => ({
-                      ...item,
-                      rank: index + 1,
-                      gpvChange: calculateGpvChangePercent(item.gpv, item.previousMonthGPV),
-                    })),
+                    targets: next,
                   }))
                 }
               />
-              <p className="text-xs text-muted-foreground">
-                CSV / Excel zorunlu alanları: `Mağaza`, `GPV`, `Önceki Ay GPV`, `Gönderi`, `ikas Kargo Paket Adedi`, `PARS`.
-              </p>
-            </div>
-          </AdminSectionCard>
-        </section>
+            </AdminSectionCard>
+          </section>
 
-        <section
-          ref={setSectionRef('targets')}
-          data-section="targets"
-          className="scroll-mt-44 space-y-4 lg:scroll-mt-56"
-        >
-          <AdminSectionCard
-            eyebrow="Pipeline"
-            title="Hedef Markalar"
-            description="Marka listesini daha okunaklı satır düzeninde yönet."
-            actions={(
-              <Button
-                variant="outline"
-                size="sm"
-                className="rounded-full"
-                onClick={() =>
+          <section
+            ref={setSectionRef('team')}
+            data-section="team"
+            className="scroll-mt-24 space-y-4 lg:scroll-mt-28"
+          >
+            <AdminSectionCard
+              eyebrow="Takım"
+              title="Takım Performansı"
+              description="CSV içe aktarma, ağırlık yönetimi ve süre düzenlemeleri tek akışta."
+            >
+              <RepresentativeSuccessAdmin
+                data={periodData.representativeSuccess}
+                weights={periodData.representativeWeights}
+                monthLabel={getMonthName(editMonth)}
+                year={editYear}
+                onDataChange={(nextData) =>
                   patchPeriod((data) => ({
                     ...data,
-                    targets: [...data.targets, { name: '', sector: '', estimatedRevenue: 0, status: 'not-live' }],
+                    representativeSuccess: nextData,
                   }))
                 }
-              >
-                <Plus className="mr-1 h-3.5 w-3.5" />
-                Marka Ekle
-              </Button>
-            )}
-          >
-            <TargetsEditor
-              data={periodData.targets}
-              onChange={(next) =>
-                patchPeriod((data) => ({
-                  ...data,
-                  targets: next,
-                }))
-              }
-            />
-          </AdminSectionCard>
-        </section>
+                onWeightsChange={(nextWeights) =>
+                  patchPeriod((data) => ({
+                    ...data,
+                    representativeWeights: nextWeights,
+                  }))
+                }
+              />
+            </AdminSectionCard>
+          </section>
 
-        <section
-          ref={setSectionRef('team')}
-          data-section="team"
-          className="scroll-mt-44 space-y-4 lg:scroll-mt-56"
-        >
-          <AdminSectionCard
-            eyebrow="Takım"
-            title="Takım Performansı"
-            description="CSV içe aktarma, ağırlık yönetimi ve süre düzenlemeleri tek akışta."
+          <section
+            ref={setSectionRef('cohort')}
+            data-section="cohort"
+            className="scroll-mt-24 space-y-4 lg:scroll-mt-28"
           >
-            <RepresentativeSuccessAdmin
-              data={periodData.representativeSuccess}
-              weights={periodData.representativeWeights}
-              monthLabel={getMonthName(editMonth)}
-              year={editYear}
-              onDataChange={(nextData) =>
-                patchPeriod((data) => ({
-                  ...data,
-                  representativeSuccess: nextData,
-                }))
-              }
-              onWeightsChange={(nextWeights) =>
-                patchPeriod((data) => ({
-                  ...data,
-                  representativeWeights: nextWeights,
-                }))
-              }
-            />
-          </AdminSectionCard>
-        </section>
-
-        <section
-          ref={setSectionRef('cohort')}
-          data-section="cohort"
-          className="scroll-mt-44 space-y-4 lg:scroll-mt-56"
-        >
-          <AdminSectionCard
-            eyebrow="Gelişmiş"
-            title="Cohort Verisi"
-            description="Isı haritası verisini doğrudan hücrelerden güncelleyebilirsin."
-          >
-            <CohortHeatmapEditor
-              data={periodData.cohort}
-              onChange={(nextCohort) =>
-                patchPeriod((data) => ({
-                  ...data,
-                  cohort: nextCohort,
-                }))
-              }
-            />
-          </AdminSectionCard>
-        </section>
+            <AdminSectionCard
+              eyebrow="Gelişmiş"
+              title="Cohort Verisi"
+              description="Isı haritası verisini doğrudan hücrelerden güncelleyebilirsin."
+            >
+              <CohortHeatmapEditor
+                data={periodData.cohort}
+                onChange={(nextCohort) =>
+                  patchPeriod((data) => ({
+                    ...data,
+                    cohort: nextCohort,
+                  }))
+                }
+              />
+            </AdminSectionCard>
+          </section>
+        </div>
       </div>
     </div>
   )
