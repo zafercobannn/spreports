@@ -622,8 +622,8 @@ function AdminWorkspace() {
   ]
 
   return (
-    <div className="min-h-screen bg-background px-4 py-5 sm:px-6 lg:px-8">
-      <div className="mx-auto grid max-w-[1680px] gap-4 pb-10 lg:grid-cols-[320px_minmax(0,1fr)] lg:items-start">
+    <div className="min-h-screen bg-background px-3 py-4 sm:px-4 lg:px-5">
+      <div className="grid w-full gap-4 pb-10 lg:grid-cols-[320px_minmax(0,1fr)] lg:items-start">
         <aside className="space-y-4 lg:sticky lg:top-3 lg:max-h-[calc(100vh-1.5rem)] lg:overflow-y-auto lg:pr-1">
           <AdminSidebar
             activeSection={activeSection}
