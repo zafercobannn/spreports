@@ -58,24 +58,24 @@ export function AdminSidebar({
   month,
 }: AdminSidebarProps) {
   return (
-    <Card className="border-white/90 bg-[linear-gradient(180deg,rgba(255,255,255,0.94)_0%,rgba(243,250,252,0.86)_100%)] p-4 shadow-[0_24px_60px_-52px_rgba(23,48,57,0.88)] sm:p-5">
-      <div className="space-y-5">
+    <Card className="rounded-[2rem] border-black/10 bg-[linear-gradient(180deg,rgba(240,248,241,0.94)_0%,rgba(245,250,248,0.86)_100%)] p-4 shadow-[0_26px_70px_-58px_rgba(18,33,39,0.42)] sm:p-5">
+      <div className="space-y-6">
         <div className="space-y-3">
           <div className="flex flex-wrap items-center gap-2">
-            <Badge variant="outline" className="border-primary/18 bg-white/70 px-3 py-1 text-[11px] tracking-[0.22em] uppercase">
-              Admin Panel
+            <Badge variant="outline" className="border-black/10 bg-white/55 px-3 py-1 text-[11px] tracking-[0.22em] uppercase text-foreground">
+              Premium Ops
             </Badge>
-            {userEmail && <Badge variant="outline">{userEmail}</Badge>}
+            {userEmail && <Badge variant="outline" className="border-black/10 bg-white/55 text-foreground">{userEmail}</Badge>}
           </div>
           <div className="space-y-1">
-            <h1 className="text-2xl font-semibold tracking-tight text-foreground">Premium Onboarding</h1>
+            <h1 className="text-[2rem] leading-none font-medium tracking-[-0.05em] text-foreground">Admin Rail</h1>
             <p className="text-sm leading-6 text-muted-foreground">
-              Veri girişi, import ve bölüm geçişlerini tek yerden yönet.
+              Kontroller solda, çalışma yüzeyi sağda. Gereken her şey bu ray üzerinde.
             </p>
           </div>
         </div>
 
-        <div className="grid gap-3 sm:grid-cols-2 lg:grid-cols-1">
+        <div className="grid gap-3 rounded-[1.6rem] border border-black/8 bg-white/44 p-3 sm:grid-cols-2 lg:grid-cols-1">
           <label className="space-y-1">
             <span className="text-[11px] font-semibold tracking-[0.14em] text-muted-foreground uppercase">Yıl</span>
             <input
@@ -101,34 +101,34 @@ export function AdminSidebar({
           </label>
         </div>
 
-        <div className="space-y-2">
-          <p className="text-[11px] font-semibold tracking-[0.18em] text-muted-foreground uppercase">Hızlı Aksiyonlar</p>
+        <div className="space-y-3 border-t border-black/8 pt-5">
+          <p className="text-[11px] font-semibold tracking-[0.18em] text-muted-foreground uppercase">Aksiyonlar</p>
           <div className="grid gap-2 sm:grid-cols-2 lg:grid-cols-1">
-            <Button onClick={onSaveNow} disabled={isSaving}>
+            <Button className="justify-start rounded-full" onClick={onSaveNow} disabled={isSaving}>
               <Upload className="mr-2 h-4 w-4" />
               {isSaving ? 'Kaydediliyor' : 'Şimdi Kaydet'}
             </Button>
             <Link to="/dashboard" className="contents">
-              <Button variant="outline">
+              <Button variant="outline" className="justify-start rounded-full border-black/10 bg-white/55">
                 <ArrowLeft className="mr-2 h-4 w-4" />
                 Dashboard
               </Button>
             </Link>
-            <Button variant="ghost" onClick={onSignOut}>
+            <Button variant="ghost" className="justify-start rounded-full" onClick={onSignOut}>
               <LogOut className="mr-2 h-4 w-4" />
               Çıkış
             </Button>
-            <Button variant="outline" onClick={onResetPeriod}>
+            <Button variant="outline" className="justify-start rounded-full border-black/10 bg-white/55" onClick={onResetPeriod}>
               <RotateCcw className="mr-2 h-4 w-4" />
               Bu Dönemi Sıfırla
             </Button>
-            <Button variant="destructive" onClick={onResetAll}>
+            <Button variant="destructive" className="justify-start rounded-full" onClick={onResetAll}>
               Tüm Veriyi Sıfırla
             </Button>
           </div>
         </div>
 
-        <div className="space-y-3">
+        <div className="space-y-3 border-t border-black/8 pt-5">
           <div className="lg:hidden">
             <AdminSectionChips items={sections} activeId={activeSection} onSelect={onSelectSection} />
           </div>
@@ -143,10 +143,10 @@ export function AdminSidebar({
                     type="button"
                     onClick={() => onSelectSection(section.id)}
                     className={cn(
-                      'flex w-full items-center justify-between rounded-2xl border px-4 py-3 text-left text-sm font-medium transition-all duration-200',
+                      'flex w-full items-center justify-between rounded-[1.2rem] border px-4 py-3 text-left text-sm font-medium transition-all duration-200',
                       isActive
-                        ? 'border-primary/30 bg-primary text-primary-foreground shadow-[0_16px_28px_-22px_rgba(42,99,115,0.78)]'
-                        : 'border-white/80 bg-white/70 text-foreground hover:border-primary/22 hover:bg-white',
+                        ? 'border-primary/20 bg-primary text-primary-foreground shadow-[0_16px_28px_-22px_rgba(42,99,115,0.42)]'
+                        : 'border-black/8 bg-white/44 text-foreground hover:border-primary/16 hover:bg-white/70',
                     )}
                   >
                     <span>{section.label}</span>
@@ -158,18 +158,18 @@ export function AdminSidebar({
           </div>
         </div>
 
-        <div className="space-y-3">
+        <div className="space-y-3 border-t border-black/8 pt-5">
           <p className="text-[11px] font-semibold tracking-[0.18em] text-muted-foreground uppercase">İçe Aktarma</p>
           <div className="grid gap-3">
             {importControls.map((control) => (
-              <div key={control.id} className="rounded-2xl border border-border/65 bg-white/76 p-4">
-                <p className="text-sm font-semibold text-foreground">{control.label}</p>
+              <div key={control.id} className="rounded-[1.4rem] border border-black/8 bg-white/44 p-4">
+                <p className="text-[13px] font-semibold uppercase tracking-[0.16em] text-foreground">{control.label}</p>
                 <div className="mt-3 flex flex-wrap items-center gap-2">
-                  <Button size="sm" variant="outline" onClick={control.onTemplateDownload}>
+                  <Button size="sm" variant="outline" className="rounded-full border-black/10 bg-white/55" onClick={control.onTemplateDownload}>
                     <Download className="mr-1 h-3.5 w-3.5" />
                     Şablon
                   </Button>
-                  <label className="inline-flex cursor-pointer items-center gap-1 rounded-full border border-border/75 bg-white px-3 py-2 text-xs font-medium text-foreground transition hover:bg-muted/35">
+                  <label className="inline-flex cursor-pointer items-center gap-1 rounded-full border border-black/10 bg-white/55 px-3 py-2 text-xs font-medium text-foreground transition hover:bg-white/80">
                     <Upload className="h-3.5 w-3.5" />
                     Yükle
                     <input

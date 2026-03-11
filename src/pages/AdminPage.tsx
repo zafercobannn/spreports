@@ -2,6 +2,7 @@ import { useEffect, useMemo, useRef, useState, type ReactNode } from 'react'
 import { Plus, Trash2 } from 'lucide-react'
 import { Button } from '@/components/ui/button'
 import { NumberInput } from '@/components/ui/number-input'
+import { AdminHeroPanel } from '@/features/admin/AdminHeroPanel'
 import { AdminInlineStatus } from '@/features/admin/AdminInlineStatus'
 import { AdminSidebar } from '@/features/admin/AdminSidebar'
 import { AdminSectionCard } from '@/features/admin/AdminSectionCard'
@@ -29,10 +30,10 @@ import {
 import { calculateGpvChangePercent } from '@/utils/top-firm-metrics'
 
 const inputClassName =
-  'h-10 w-full min-w-0 rounded-xl border border-border/75 bg-white/90 px-3 text-sm text-foreground outline-none transition focus:border-primary/55 focus:ring-2 focus:ring-primary/15'
+  'h-11 w-full min-w-0 rounded-2xl border border-black/10 bg-white/72 px-4 text-sm text-foreground outline-none transition focus:border-primary/35 focus:ring-2 focus:ring-primary/10'
 
 const smallInputClassName =
-  'h-9 w-full min-w-0 rounded-xl border border-border/75 bg-white/90 px-3 text-sm text-foreground outline-none transition focus:border-primary/55 focus:ring-2 focus:ring-primary/15'
+  'h-10 w-full min-w-0 rounded-2xl border border-black/10 bg-white/72 px-4 text-sm text-foreground outline-none transition focus:border-primary/35 focus:ring-2 focus:ring-primary/10'
 
 const adminSectionItems = [
   { id: 'general', label: 'Genel Veriler' },
@@ -83,10 +84,10 @@ function FieldGroup({
   children: ReactNode
 }) {
   return (
-    <div className="rounded-[1.6rem] border border-border/65 bg-white/72 p-5">
+    <div className="rounded-[1.8rem] border border-black/8 bg-[linear-gradient(180deg,rgba(255,255,255,0.6)_0%,rgba(249,252,251,0.48)_100%)] p-5">
       <div className="space-y-1">
-        <p className="text-[11px] font-semibold tracking-[0.18em] text-muted-foreground uppercase">{label}</p>
-        {description && <p className="text-sm text-muted-foreground">{description}</p>}
+        <p className="text-[11px] font-semibold tracking-[0.2em] text-muted-foreground uppercase">{label}</p>
+        {description && <p className="text-[15px] leading-6 text-muted-foreground">{description}</p>}
       </div>
       <div className="mt-4">{children}</div>
     </div>
@@ -124,7 +125,7 @@ function ReadOnlyMetricField({
   return (
     <div className="space-y-1.5">
       <span className="text-xs text-muted-foreground">{label}</span>
-      <div className="flex min-h-10 flex-col justify-center rounded-xl border border-border/75 bg-background/60 px-3 py-2">
+      <div className="flex min-h-11 flex-col justify-center rounded-2xl border border-black/10 bg-white/45 px-4 py-2">
         <p className="text-sm font-semibold text-foreground">{value}</p>
         {helper && <p className="text-xs text-muted-foreground">{helper}</p>}
       </div>
@@ -145,7 +146,7 @@ function PlatformEditorPanel({
     <FieldGroup label={title}>
       <div className="space-y-3">
         {items.length === 0 && (
-          <div className="rounded-2xl border border-dashed border-border/75 bg-background/45 px-4 py-5 text-sm text-muted-foreground">
+          <div className="rounded-[1.4rem] border border-dashed border-black/10 bg-white/34 px-4 py-5 text-sm text-muted-foreground">
             Kayıt yok. Elle ekleyebilir veya üst bardan içe aktarabilirsin.
           </div>
         )}
@@ -153,7 +154,7 @@ function PlatformEditorPanel({
         {items.map((platform, index) => (
           <div
             key={`${platform.name}-${index}`}
-            className="grid grid-cols-1 gap-3 rounded-2xl border border-border/60 bg-white/78 p-3 md:grid-cols-[minmax(0,1fr)_170px_42px]"
+            className="grid grid-cols-1 gap-3 rounded-[1.4rem] border border-black/8 bg-white/52 p-3 md:grid-cols-[minmax(0,1fr)_170px_42px]"
           >
             <label className="space-y-1">
               <span className="text-[11px] font-semibold tracking-[0.14em] text-muted-foreground uppercase md:hidden">
@@ -189,7 +190,7 @@ function PlatformEditorPanel({
               <Button
                 variant="outline"
                 size="icon"
-                className="h-10 w-10 rounded-xl"
+                className="h-10 w-10 rounded-2xl border-black/10 bg-white/65"
                 onClick={() => onItemsChange(items.filter((_, itemIndex) => itemIndex !== index))}
               >
                 <Trash2 className="h-4 w-4" />
@@ -201,7 +202,7 @@ function PlatformEditorPanel({
         <Button
           variant="outline"
           size="sm"
-          className="rounded-full"
+          className="rounded-full border-black/10 bg-white/60"
           onClick={() => onItemsChange([...items, { name: '', count: 0 }])}
         >
           <Plus className="mr-1 h-3.5 w-3.5" />
@@ -238,11 +239,11 @@ function TopFirmsEditor({
         return (
           <div
             key={`${firm.name}-${index}`}
-            className="grid grid-cols-1 gap-3 rounded-[1.6rem] border border-border/60 bg-white/78 p-4 xl:grid-cols-[56px_minmax(0,1.4fr)_160px_160px_120px_170px_170px_44px]"
+            className="grid grid-cols-1 gap-3 rounded-[1.6rem] border border-black/8 bg-white/52 p-4 xl:grid-cols-[56px_minmax(0,1.4fr)_160px_160px_120px_170px_170px_44px]"
           >
             <div className="space-y-1">
               <span className="text-[11px] font-semibold tracking-[0.14em] text-muted-foreground uppercase xl:hidden">Sıra</span>
-              <div className="flex h-10 items-center rounded-xl border border-border/65 bg-background/55 px-3 text-sm font-semibold text-foreground">
+              <div className="flex h-10 items-center rounded-2xl border border-black/10 bg-white/45 px-4 text-sm font-semibold text-foreground">
                 {index + 1}
               </div>
             </div>
@@ -289,7 +290,7 @@ function TopFirmsEditor({
 
             <div className="space-y-1">
               <span className="text-[11px] font-semibold tracking-[0.14em] text-muted-foreground uppercase xl:hidden">Değişim %</span>
-              <div className="flex h-9 items-center rounded-xl border border-border/65 bg-background/55 px-3 text-sm font-semibold text-foreground">
+              <div className="flex h-10 items-center rounded-2xl border border-black/10 bg-white/45 px-4 text-sm font-semibold text-foreground">
                 {gpvChange.toFixed(1)}%
               </div>
             </div>
@@ -327,7 +328,7 @@ function TopFirmsEditor({
               <Button
                 variant="outline"
                 size="icon"
-                className="h-9 w-9 rounded-xl"
+                className="h-10 w-10 rounded-2xl border-black/10 bg-white/65"
                 onClick={() => onChange(data.filter((_, itemIndex) => itemIndex !== index))}
               >
                 <Trash2 className="h-4 w-4" />
@@ -360,7 +361,7 @@ function TargetsEditor({
       {data.map((target, index) => (
         <div
           key={`${target.name}-${index}`}
-          className="grid grid-cols-1 gap-3 rounded-[1.6rem] border border-border/60 bg-white/78 p-4 xl:grid-cols-[minmax(0,1.2fr)_minmax(0,1.1fr)_180px_180px_44px]"
+          className="grid grid-cols-1 gap-3 rounded-[1.6rem] border border-black/8 bg-white/52 p-4 xl:grid-cols-[minmax(0,1.2fr)_minmax(0,1.1fr)_180px_180px_44px]"
         >
           <label className="space-y-1">
             <span className="text-[11px] font-semibold tracking-[0.14em] text-muted-foreground uppercase xl:hidden">Marka</span>
@@ -424,7 +425,7 @@ function TargetsEditor({
             <Button
               variant="outline"
               size="icon"
-              className="h-10 w-10 rounded-xl"
+              className="h-10 w-10 rounded-2xl border-black/10 bg-white/65"
               onClick={() => onChange(data.filter((_, itemIndex) => itemIndex !== index))}
             >
               <Trash2 className="h-4 w-4" />
@@ -574,6 +575,7 @@ function AdminWorkspace() {
   if (!periodData) return null
 
   const cloudStatus = cloudSync?.status ?? 'idle'
+  const activeSectionLabel = adminSectionItems.find((item) => item.id === activeSection)?.label ?? 'Genel Veriler'
   const lastSavedAtLabel = cloudSync?.lastSavedAt
     ? new Intl.DateTimeFormat('tr-TR', {
       dateStyle: 'short',
@@ -581,6 +583,7 @@ function AdminWorkspace() {
     }).format(new Date(cloudSync.lastSavedAt))
     : 'Henüz başarılı kayıt yok'
   const cloudSyncEnabled = isCloudPersistenceEnabled()
+  const periodLabel = `${getMonthName(editMonth)} ${editYear}`
 
   const importControls = [
     {
@@ -622,8 +625,12 @@ function AdminWorkspace() {
   ]
 
   return (
-    <div className="min-h-screen bg-background px-3 py-4 sm:px-4 lg:px-5">
-      <div className="grid w-full gap-4 pb-10 lg:grid-cols-[320px_minmax(0,1fr)] lg:items-start">
+    <div className="relative min-h-screen overflow-hidden bg-[linear-gradient(180deg,#edf6ef_0%,#edf4f6_42%,#f6f5f0_100%)] px-3 py-4 sm:px-4 lg:px-5">
+      <div className="pointer-events-none absolute left-[-8%] top-[-6%] h-[420px] w-[420px] rounded-full bg-[radial-gradient(circle_at_center,rgba(120,205,179,0.26),transparent_68%)] blur-3xl" />
+      <div className="pointer-events-none absolute right-[-6%] top-[8%] h-[380px] w-[420px] rounded-full bg-[radial-gradient(circle_at_center,rgba(123,207,255,0.22),transparent_66%)] blur-3xl" />
+      <div className="pointer-events-none absolute bottom-[-10%] right-[10%] h-[340px] w-[340px] rounded-full bg-[radial-gradient(circle_at_center,rgba(255,185,214,0.18),transparent_70%)] blur-3xl" />
+
+      <div className="relative grid w-full gap-5 pb-10 lg:grid-cols-[305px_minmax(0,1fr)] lg:items-start xl:grid-cols-[320px_minmax(0,1fr)]">
         <aside className="space-y-4 lg:sticky lg:top-3 lg:max-h-[calc(100vh-1.5rem)] lg:overflow-y-auto lg:pr-1">
           <AdminSidebar
             activeSection={activeSection}
@@ -649,6 +656,12 @@ function AdminWorkspace() {
         </aside>
 
         <div className="space-y-4">
+          <AdminHeroPanel
+            activeSectionLabel={activeSectionLabel}
+            periodLabel={periodLabel}
+            userEmail={userEmail}
+          />
+
           <div className="sticky top-3 z-30">
             <AdminSyncBar
               periodKey={periodKey}
@@ -834,12 +847,12 @@ function AdminWorkspace() {
               title="Top Firmalar"
               description="Top 15 listesini satır bazında hızlıca düzenle."
               actions={(
-                <Button
-                  variant="outline"
-                  size="sm"
-                  className="rounded-full"
-                  onClick={() =>
-                    patchPeriod((data) => ({
+              <Button
+                variant="outline"
+                size="sm"
+                className="rounded-full border-black/10 bg-white/55"
+                onClick={() =>
+                  patchPeriod((data) => ({
                       ...data,
                       topFirms: [
                         ...data.topFirms,
@@ -893,12 +906,12 @@ function AdminWorkspace() {
               title="Hedef Markalar"
               description="Marka listesini daha okunaklı satır düzeninde yönet."
               actions={(
-                <Button
-                  variant="outline"
-                  size="sm"
-                  className="rounded-full"
-                  onClick={() =>
-                    patchPeriod((data) => ({
+              <Button
+                variant="outline"
+                size="sm"
+                className="rounded-full border-black/10 bg-white/55"
+                onClick={() =>
+                  patchPeriod((data) => ({
                       ...data,
                       targets: [...data.targets, { name: '', sector: '', estimatedRevenue: 0, status: 'not-live' }],
                     }))

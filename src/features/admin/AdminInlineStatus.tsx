@@ -15,8 +15,8 @@ export function AdminInlineStatus({ message, tone }: AdminInlineStatusProps) {
     <div
       className={
         isError
-          ? 'rounded-2xl border border-destructive/25 bg-destructive/8 px-4 py-3 text-sm text-destructive'
-          : 'rounded-2xl border border-emerald-200/70 bg-emerald-50/85 px-4 py-3 text-sm text-emerald-800'
+          ? 'rounded-[1.4rem] border border-destructive/20 bg-[rgba(255,244,246,0.88)] px-4 py-3 text-sm text-destructive shadow-[0_18px_34px_-28px_rgba(193,69,87,0.35)]'
+          : 'rounded-[1.4rem] border border-emerald-200/70 bg-[rgba(242,251,246,0.9)] px-4 py-3 text-sm text-emerald-800 shadow-[0_18px_34px_-28px_rgba(67,138,96,0.25)]'
       }
       role="status"
       aria-live="polite"
