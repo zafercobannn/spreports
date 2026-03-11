@@ -77,9 +77,6 @@ export function AdminLoginExperience() {
               </Badge>
               <div>
                 <h2 className="text-2xl font-semibold tracking-tight text-foreground">Admin girişi</h2>
-                <p className="mt-2 text-sm leading-6 text-muted-foreground">
-                  Firebase üzerinde tanımlı yönetici hesabınla oturum aç.
-                </p>
               </div>
             </div>
 
@@ -127,12 +124,6 @@ export function AdminLoginExperience() {
                 />
               </div>
             </label>
-
-            {primaryAdminEmail && (
-              <div className="rounded-2xl border border-primary/12 bg-primary/6 px-4 py-3 text-sm text-primary">
-                Yetkili hesap: <span className="font-semibold">{primaryAdminEmail}</span>
-              </div>
-            )}
 
             {userEmail && userEmail !== primaryAdminEmail && (
               <div className="rounded-2xl border border-amber-300/60 bg-amber-50 px-4 py-3 text-sm text-amber-900">

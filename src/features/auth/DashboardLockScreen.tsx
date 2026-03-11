@@ -8,7 +8,7 @@ import { Skeleton } from '@/components/ui/skeleton'
 import { useAdminAuth } from './AdminAuthProvider'
 
 export function DashboardLockScreen() {
-  const { isLoading, userEmail, primaryAdminEmail, signOut } = useAdminAuth()
+  const { isLoading, userEmail, signOut } = useAdminAuth()
 
   return (
     <DashboardLayout>
@@ -88,19 +88,14 @@ export function DashboardLockScreen() {
               <h2 className="mt-5 text-2xl font-semibold tracking-tight text-foreground">
                 {isLoading ? 'Oturum doğrulanıyor' : 'Dashboard kilitli'}
               </h2>
-              <p className="mt-3 text-sm leading-7 text-muted-foreground">
-                {isLoading
-                  ? 'Firebase oturum durumu kontrol ediliyor. Birkaç saniye içinde erişim seviyesi netleşecek.'
-                  : 'Veri kartları, tablolar ve tüm performans sekmeleri yönetici oturumu olmadan bulanık tutulur.'}
-              </p>
+              {isLoading && (
+                <p className="mt-3 text-sm leading-7 text-muted-foreground">
+                  Firebase oturum durumu kontrol ediliyor. Birkaç saniye içinde erişim seviyesi netleşecek.
+                </p>
+              )}
 
               {!isLoading && (
                 <div className="mt-6 space-y-3">
-                  {primaryAdminEmail && (
-                    <div className="rounded-2xl border border-primary/12 bg-primary/6 px-4 py-3 text-sm text-primary">
-                      Yetkili hesap: <span className="font-semibold">{primaryAdminEmail}</span>
-                    </div>
-                  )}
                   {userEmail && (
                     <div className="rounded-2xl border border-amber-300/60 bg-amber-50 px-4 py-3 text-sm text-amber-900">
                       Oturumda görünen hesap: <span className="font-semibold">{userEmail}</span>
