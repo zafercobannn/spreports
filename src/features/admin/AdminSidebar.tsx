@@ -67,12 +67,6 @@ export function AdminSidebar({
             </Badge>
             {userEmail && <Badge variant="outline" className="border-black/10 bg-white/55 text-foreground">{userEmail}</Badge>}
           </div>
-          <div className="space-y-1">
-            <h1 className="text-[2rem] leading-none font-medium tracking-[-0.05em] text-foreground">Admin Rail</h1>
-            <p className="text-sm leading-6 text-muted-foreground">
-              Kontroller solda, çalışma yüzeyi sağda. Gereken her şey bu ray üzerinde.
-            </p>
-          </div>
         </div>
 
         <div className="grid gap-3 rounded-[1.6rem] border border-black/8 bg-white/44 p-3 sm:grid-cols-2 lg:grid-cols-1">
