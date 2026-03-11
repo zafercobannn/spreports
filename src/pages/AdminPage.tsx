@@ -575,7 +575,6 @@ function AdminWorkspace() {
   if (!periodData) return null
 
   const cloudStatus = cloudSync?.status ?? 'idle'
-  const activeSectionLabel = adminSectionItems.find((item) => item.id === activeSection)?.label ?? 'Genel Veriler'
   const lastSavedAtLabel = cloudSync?.lastSavedAt
     ? new Intl.DateTimeFormat('tr-TR', {
       dateStyle: 'short',
@@ -657,7 +656,6 @@ function AdminWorkspace() {
 
         <div className="space-y-4">
           <AdminHeroPanel
-            activeSectionLabel={activeSectionLabel}
             periodLabel={periodLabel}
             userEmail={userEmail}
           />

@@ -2,13 +2,11 @@ import { Badge } from '@/components/ui/badge'
 import { Card } from '@/components/ui/card'
 
 interface AdminHeroPanelProps {
-  activeSectionLabel: string
   periodLabel: string
   userEmail: string
 }
 
 export function AdminHeroPanel({
-  activeSectionLabel,
   periodLabel,
   userEmail,
 }: AdminHeroPanelProps) {
@@ -26,7 +24,7 @@ export function AdminHeroPanel({
         <div className="max-w-3xl space-y-5">
           <div className="flex flex-wrap items-center gap-2">
             <Badge variant="outline" className="border-black/12 bg-white/55 px-3 py-1 text-[11px] tracking-[0.22em] uppercase text-foreground">
-              Operational Canvas
+              Premium Onboarding
             </Badge>
             <Badge variant="outline" className="border-black/12 bg-white/55 text-foreground">
               {periodLabel}
@@ -35,10 +33,10 @@ export function AdminHeroPanel({
 
           <div className="space-y-3">
             <h1 className="max-w-2xl text-4xl leading-[0.98] font-medium tracking-[-0.05em] text-foreground sm:text-5xl lg:text-[4.2rem]">
-              Dashboard verisini daha sakin bir yüzeyden yönet.
+              Premium Onboarding kontrolünü tek yerde topla.
             </h1>
             <p className="max-w-xl text-base leading-7 text-muted-foreground sm:text-lg">
-              Seçili dönem için veri girişini soldan yönlendir, düzenlemeleri sağdaki tek çalışma yüzeyinden tamamla.
+              Verileri güncelle, süreci takip et, ekibi aynı ritimde tut.
             </p>
           </div>
         </div>
@@ -46,13 +44,13 @@ export function AdminHeroPanel({
         <div className="relative">
           <div className="grid gap-px overflow-hidden rounded-[2rem] border border-black/10 bg-black/10">
             <div className="bg-white/54 p-5 backdrop-blur-md">
-              <p className="text-[11px] font-semibold tracking-[0.2em] uppercase text-muted-foreground">Aktif Bölüm</p>
-              <p className="mt-3 text-3xl font-medium tracking-tight text-foreground">{activeSectionLabel}</p>
+              <p className="text-[11px] font-semibold tracking-[0.2em] uppercase text-muted-foreground">Premium Onboarding</p>
+              <p className="mt-3 text-3xl font-medium tracking-tight text-foreground">Net veri, düzenli operasyon.</p>
             </div>
             <div className="bg-white/48 p-5 backdrop-blur-md">
-              <p className="text-[11px] font-semibold tracking-[0.2em] uppercase text-muted-foreground">Operasyon Notu</p>
+              <p className="text-[11px] font-semibold tracking-[0.2em] uppercase text-muted-foreground">Çalışma Alanı</p>
               <p className="mt-3 max-w-sm text-sm leading-6 text-foreground/80">
-                İçe aktarmalar, dönem seçimi ve bölüm geçişleri artık tek rail üzerinde. Sağ alan sadece çalışmaya ayrıldı.
+                Tüm kritik girişler tek akışta bir araya gelir.
               </p>
               {userEmail && (
                 <p className="mt-4 text-xs text-muted-foreground">
