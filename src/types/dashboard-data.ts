@@ -15,6 +15,8 @@ export interface DashboardPeriodData {
   cohort: CohortMatrix
   topFirms: TopFirm[]
   targets: TargetBrand[]
+  targetCount: number
+  realizedCount: number | null
   teamPerformance: TeamMemberPerformance[]
   representativeSuccess: RepresentativeSuccessRecord[]
   representativeWeights: RepresentativeSuccessWeights

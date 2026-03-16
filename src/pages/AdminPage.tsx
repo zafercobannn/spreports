@@ -38,6 +38,7 @@ const smallInputClassName =
 const adminSectionItems = [
   { id: 'general', label: 'Genel Veriler' },
   { id: 'top-firms', label: 'Top Firmalar' },
+  { id: 'target-counts', label: 'Hedef Adet Takibi' },
   { id: 'targets', label: 'Hedef Markalar' },
   { id: 'team', label: 'Takım Performansı' },
   { id: 'cohort', label: 'Cohort' },
@@ -337,6 +338,76 @@ function TopFirmsEditor({
           </div>
         )
       })}
+    </div>
+  )
+}
+
+function TargetCountEditor({
+  targetCount,
+  realizedCount,
+  autoRealizedCount,
+  onTargetCountChange,
+  onRealizedCountChange,
+}: {
+  targetCount: number
+  realizedCount: number | null
+  autoRealizedCount: number
+  onTargetCountChange: (value: number) => void
+  onRealizedCountChange: (value: number | null) => void
+}) {
+  const isOverride = realizedCount !== null
+  const displayRealized = realizedCount ?? autoRealizedCount
+
+  return (
+    <div className="grid grid-cols-1 gap-4 sm:grid-cols-2">
+      <div className="space-y-2">
+        <label className="text-[11px] font-semibold tracking-[0.14em] text-muted-foreground uppercase">
+          Hedef Adet
+        </label>
+        <NumberInput
+          value={targetCount}
+          onChange={onTargetCountChange}
+          className={inputClassName}
+          placeholder="Ör: 10"
+        />
+        <p className="text-xs text-muted-foreground">Bu ay canlıya alınması hedeflenen marka adedi</p>
+      </div>
+
+      <div className="space-y-2">
+        <div className="flex items-center justify-between">
+          <label className="text-[11px] font-semibold tracking-[0.14em] text-muted-foreground uppercase">
+            Gerçekleşen Adet
+          </label>
+          <label className="flex items-center gap-1.5 text-xs text-muted-foreground">
+            <input
+              type="checkbox"
+              checked={isOverride}
+              onChange={(e) => {
+                if (e.target.checked) {
+                  onRealizedCountChange(autoRealizedCount)
+                } else {
+                  onRealizedCountChange(null)
+                }
+              }}
+              className="h-3.5 w-3.5 rounded border-black/20"
+            />
+            Manuel giriş
+          </label>
+        </div>
+        {isOverride ? (
+          <NumberInput
+            value={displayRealized}
+            onChange={(v) => onRealizedCountChange(v)}
+            className={inputClassName}
+            placeholder="Gerçekleşen adet"
+          />
+        ) : (
+          <div className={`${inputClassName} flex items-center bg-black/[0.02] text-muted-foreground`}>
+            {autoRealizedCount} <span className="ml-1.5 text-xs">(otomatik — canlı marka sayısı)</span>
+          </div>
+        )}
+        <p className="text-xs text-muted-foreground">Canlıya alınan gerçek marka adedi</p>
+      </div>
     </div>
   )
 }
@@ -887,6 +958,30 @@ function AdminWorkspace() {
                   CSV / Excel zorunlu alanları: `Mağaza`, `GPV`, `Önceki Ay GPV`, `Gönderi`, `ikas Kargo Paket Adedi`, `PARS`.
                 </p>
               </div>
+            </AdminSectionCard>
+          </section>
+
+          <section
+            ref={setSectionRef('target-counts')}
+            data-section="target-counts"
+            className="scroll-mt-24 space-y-4 lg:scroll-mt-28"
+          >
+            <AdminSectionCard
+              eyebrow="Pipeline"
+              title="Hedef Adet Takibi"
+              description="Bu aya ait hedef ve gerçekleşen adetleri girin. Ay değiştiğinde veriler otomatik takip eder."
+            >
+              <TargetCountEditor
+                targetCount={periodData.targetCount}
+                realizedCount={periodData.realizedCount}
+                autoRealizedCount={periodData.targets.filter((t) => t.status === 'live').length}
+                onTargetCountChange={(next) =>
+                  patchPeriod((data) => ({ ...data, targetCount: next }))
+                }
+                onRealizedCountChange={(next) =>
+                  patchPeriod((data) => ({ ...data, realizedCount: next }))
+                }
+              />
             </AdminSectionCard>
           </section>
 

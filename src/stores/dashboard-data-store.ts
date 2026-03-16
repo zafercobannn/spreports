@@ -436,6 +436,8 @@ function createEmptyPeriodData(year: number, month: number): DashboardPeriodData
     cohort: createEmptyCohortForMonth(year, normalizedMonth),
     topFirms: [],
     targets: [],
+    targetCount: 0,
+    realizedCount: null,
     teamPerformance: [],
     representativeSuccess: [],
     representativeWeights: deepClone(DEFAULT_REPRESENTATIVE_WEIGHTS),
@@ -586,6 +588,11 @@ function sanitizePeriodData(year: number, month: number, raw: unknown): Dashboar
       }
     : seed.successIndex
 
+  const targetCount = Math.max(0, toNumber(safeRaw.targetCount, seed.targetCount))
+  const realizedCount = safeRaw.realizedCount === null || safeRaw.realizedCount === undefined
+    ? null
+    : Math.max(0, toNumber(safeRaw.realizedCount, 0))
+
   return {
     monthlyGPV: normalizedMonthlyGPV,
     cohort: isCohortMatrix(safeRaw.cohort)
@@ -593,6 +600,8 @@ function sanitizePeriodData(year: number, month: number, raw: unknown): Dashboar
       : normalizeCohortForMonth(seed.cohort, year, month),
     topFirms,
     targets,
+    targetCount,
+    realizedCount,
     teamPerformance,
     representativeSuccess,
     representativeWeights,

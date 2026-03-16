@@ -1,4 +1,5 @@
 import { useEffect, useMemo } from 'react'
+import { Target } from 'lucide-react'
 import { PageSection } from '@/components/layout/PageSection'
 import { useFilters } from '@/hooks/use-filters'
 import { getPeriodKey, useDashboardDataStore } from '@/stores/dashboard-data-store'
@@ -22,6 +23,25 @@ function getOffsetPeriod(year: number, month: number, offset: number): { year: n
   return { year: nextYear, month: nextMonth }
 }
 
+function TargetCountCard({ targetCount, periodLabel }: { targetCount: number; periodLabel: string }) {
+  return (
+    <div className="rounded-xl border border-black/6 bg-white/60 p-5 backdrop-blur-sm">
+      <div className="flex items-center gap-3">
+        <div className="flex h-10 w-10 items-center justify-center rounded-lg bg-amber-100 text-amber-600">
+          <Target className="h-5 w-5" />
+        </div>
+        <div>
+          <p className="text-sm font-medium text-muted-foreground">{periodLabel}</p>
+          <p className="text-2xl font-bold tracking-tight">
+            {targetCount > 0 ? targetCount : '—'}
+            <span className="ml-2 text-base font-normal text-muted-foreground">adet hedef</span>
+          </p>
+        </div>
+      </div>
+    </div>
+  )
+}
+
 export function XMonthTargetTab() {
   const { year, month } = useFilters()
   const ensurePeriod = useDashboardDataStore((s) => s.ensurePeriod)
@@ -37,11 +57,15 @@ export function XMonthTargetTab() {
     ensurePeriod(targetPeriod.year, targetPeriod.month)
   }, [ensurePeriod, targetPeriod.month, targetPeriod.year])
 
+  const targetCount = targetPeriodData?.targetCount ?? 0
+  const periodLabel = `${getMonthName(targetPeriod.month)} ${targetPeriod.year}`
+
   return (
     <div className="space-y-6">
+      <TargetCountCard targetCount={targetCount} periodLabel={periodLabel} />
       <PageSection
         title="Bir Sonraki Ay Hedef"
-        description={`${getMonthName(targetPeriod.month)} ${targetPeriod.year} için canlıya alınması hedeflenen markalar`}
+        description={`${periodLabel} için canlıya alınması hedeflenen markalar`}
       >
         <TargetBrandsList data={targetPeriodData?.targets ?? []} showStatus={false} />
       </PageSection>
