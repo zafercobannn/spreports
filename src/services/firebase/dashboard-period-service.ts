@@ -48,6 +48,8 @@ interface EncryptedPeriodPayload {
   cohort: DashboardPeriodData['cohort']
   topFirms: DashboardPeriodData['topFirms']
   targets: DashboardPeriodData['targets']
+  targetCount: DashboardPeriodData['targetCount']
+  realizedCount: DashboardPeriodData['realizedCount']
   teamPerformance: DashboardPeriodData['teamPerformance']
   monthlyTargets: DashboardPeriodData['monthlyTargets']
   successIndex: DashboardPeriodData['successIndex']
@@ -159,6 +161,8 @@ export async function saveDashboardPeriodToCloud(
     cohort: data.cohort,
     topFirms: data.topFirms,
     targets: data.targets,
+    targetCount: data.targetCount,
+    realizedCount: data.realizedCount,
     teamPerformance: data.teamPerformance,
     monthlyTargets: data.monthlyTargets,
     successIndex: data.successIndex,
