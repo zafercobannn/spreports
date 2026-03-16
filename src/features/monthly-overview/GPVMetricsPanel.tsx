@@ -48,7 +48,6 @@ export function GPVMetricsPanel({ data }: GPVMetricsPanelProps) {
         label="Toplam SP"
         value={formatNumber(data.totalSP)}
         icon={<Users className="h-5 w-5" />}
-        subtitle={`Premium: ${data.premiumOnboardingLiveCount}`}
       />
       <KPICard
         label="Aylık Live Sayısı"
