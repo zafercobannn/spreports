@@ -89,7 +89,7 @@ function createValueLabelLayer(): (props: BarCustomLayerProps<ComparisonBarDatum
     <g>
       {bars.map((bar) => {
         const datum = bar.data.data as ComparisonBarDatum
-        const isPrevious = bar.key === 'previous'
+        const isPrevious = String(bar.data.id) === 'previous'
         const rawValue = isPrevious ? datum.previousRaw : datum.currentRaw
         const label = formatComparisonValue(rawValue, datum.valueType)
 
@@ -118,7 +118,7 @@ function createShareLabelLayer(): (props: BarCustomLayerProps<ComparisonBarDatum
         if (bar.height < 24) return null
 
         const datum = bar.data.data as ComparisonBarDatum
-        const isPrevious = bar.key === 'previous'
+        const isPrevious = String(bar.data.id) === 'previous'
         const shareValue = isPrevious ? datum.previousShare : datum.currentShare
 
         return (
@@ -146,7 +146,7 @@ function createBarMonthLabelLayer(
   return ({ bars, innerHeight }) => (
     <g>
       {bars.map((bar) => {
-        const isPrevious = bar.key === 'previous'
+        const isPrevious = String(bar.data.id) === 'previous'
         const text = isPrevious ? previousLabel : currentLabel
 
         return (

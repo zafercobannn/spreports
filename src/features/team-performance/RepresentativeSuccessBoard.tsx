@@ -2,6 +2,7 @@ import { useMemo } from 'react'
 import { Star } from 'lucide-react'
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from '@/components/ui/card'
 import { Badge } from '@/components/ui/badge'
+import { getRepresentativePhoto } from '@/constants/representative-photos'
 import { formatNumber } from '@/utils/format'
 import { average, sum } from '@/utils/calculations'
 import type { RepresentativeSuccessRecord, RepresentativeSuccessWeights } from '@/types/team'
@@ -106,9 +107,9 @@ export function RepresentativeSuccessBoard({
         <Card>
           <CardContent className="space-y-4 p-4">
             <div className="overflow-hidden rounded-xl border border-border/70 bg-muted/30">
-              {top.record.imageUrl ? (
+              {(top.record.imageUrl || getRepresentativePhoto(top.record.name)) ? (
                 <img
-                  src={top.record.imageUrl}
+                  src={top.record.imageUrl || getRepresentativePhoto(top.record.name)}
                   alt={top.record.name}
                   className="h-52 w-full object-cover"
                 />
@@ -166,9 +167,9 @@ export function RepresentativeSuccessBoard({
                         </td>
                         <td className="px-3 py-3">
                           <div className="flex items-center gap-2">
-                            {row.record.imageUrl ? (
+                            {(row.record.imageUrl || getRepresentativePhoto(row.record.name)) ? (
                               <img
-                                src={row.record.imageUrl}
+                                src={row.record.imageUrl || getRepresentativePhoto(row.record.name)}
                                 alt={row.record.name}
                                 className="h-8 w-8 rounded-md object-cover"
                               />
