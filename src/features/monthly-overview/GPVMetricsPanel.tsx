@@ -37,12 +37,12 @@ export function GPVMetricsPanel({ data }: GPVMetricsPanelProps) {
         label="Canlı Hesap Sayısı (SP)"
         value={formatNumber(data.liveAccountCount)}
         icon={<Users className="h-5 w-5" />}
-        subtitle="En az 1 kere ödeme almış SP"
       />
       <KPICard
         label="Canlı SP"
         value={formatNumber(data.liveSPCount)}
         icon={<Users className="h-5 w-5" />}
+        subtitle="En az 1 kere ödeme almış SP"
       />
       <KPICard
         label="Toplam SP"
