@@ -290,6 +290,8 @@ export async function loadDashboardPeriodFromCloud(
     cohort: payload.cohort,
     topFirms: payload.topFirms,
     targets: payload.targets,
+    targetCount: payload.targetCount ?? 0,
+    realizedCount: payload.realizedCount ?? null,
     teamPerformance: payload.teamPerformance,
     monthlyTargets: payload.monthlyTargets,
     successIndex: payload.successIndex,

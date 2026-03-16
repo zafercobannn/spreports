@@ -366,7 +366,7 @@ function TargetCountEditor({
         </label>
         <NumberInput
           value={targetCount}
-          onChange={onTargetCountChange}
+          onValueChange={onTargetCountChange}
           className={inputClassName}
           placeholder="Ör: 10"
         />
@@ -397,7 +397,7 @@ function TargetCountEditor({
         {isOverride ? (
           <NumberInput
             value={displayRealized}
-            onChange={(v) => onRealizedCountChange(v)}
+            onValueChange={(v) => onRealizedCountChange(v)}
             className={inputClassName}
             placeholder="Gerçekleşen adet"
           />
@@ -530,6 +530,7 @@ function AdminWorkspace() {
   const sectionRefs = useRef<Record<AdminSectionId, HTMLElement | null>>({
     general: null,
     'top-firms': null,
+    'target-counts': null,
     targets: null,
     team: null,
     cohort: null,
