@@ -1,6 +1,5 @@
 import { DataTable, type Column } from '@/components/data-display/DataTable'
 import { StatusBadge } from '@/components/data-display/StatusBadge'
-import { formatCurrency } from '@/utils/format'
 import type { TargetBrand } from '@/types/targets'
 
 interface TargetBrandsListProps {
@@ -24,7 +23,7 @@ export function TargetBrandsList({ data, showStatus = true }: TargetBrandsListPr
       header: 'Tahmini Ciro',
       align: 'right',
       sortable: true,
-      render: (row) => formatCurrency(row.estimatedRevenue),
+      render: (row) => row.estimatedRevenue || '—',
     },
   ]
 

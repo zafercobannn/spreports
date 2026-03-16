@@ -34,7 +34,7 @@ export function GPVMetricsPanel({ data }: GPVMetricsPanelProps) {
         )}
       />
       <KPICard
-        label="Canlı Hesap Sayısı"
+        label="Canlı Hesap Sayısı (SP)"
         value={formatNumber(data.liveAccountCount)}
         icon={<Users className="h-5 w-5" />}
         subtitle="En az 1 kere ödeme almış SP"
@@ -53,7 +53,7 @@ export function GPVMetricsPanel({ data }: GPVMetricsPanelProps) {
       <KPICard
         label="Aylık Live Sayısı"
         value={formatNumber(data.monthlyLiveCount)}
-        subtitle={`Canlı SP (${formatNumber(data.liveSPCount)}) + Premium (${formatNumber(data.premiumOnboardingLiveCount)})`}
+        subtitle={`Canlı Hesap (SP) (${formatNumber(data.liveAccountCount)}) + Premium (${formatNumber(data.premiumOnboardingLiveCount)})`}
       />
       <KPICard
         label="Premium Onboarding"

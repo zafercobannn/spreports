@@ -64,10 +64,31 @@ function toNumber(value: unknown): number {
   if (typeof value === 'number') return Number.isFinite(value) ? value : 0
   if (typeof value === 'string') {
     const trimmed = value.trim()
-    const normalized = trimmed.includes(',') && trimmed.includes('.')
-      ? trimmed.replace(/\./g, '').replace(',', '.')
-      : trimmed.replace(',', '.')
-    const parsed = Number(normalized)
+    if (!trimmed) return 0
+
+    if (trimmed.includes(',') && trimmed.includes('.')) {
+      const normalized = trimmed.replace(/\./g, '').replace(',', '.')
+      const parsed = Number(normalized)
+      return Number.isFinite(parsed) ? parsed : 0
+    }
+
+    if (trimmed.includes(',')) {
+      const parsed = Number(trimmed.replace(',', '.'))
+      return Number.isFinite(parsed) ? parsed : 0
+    }
+
+    const dotCount = (trimmed.match(/\./g) ?? []).length
+    if (dotCount > 1) {
+      const parsed = Number(trimmed.replace(/\./g, ''))
+      return Number.isFinite(parsed) ? parsed : 0
+    }
+
+    if (dotCount === 1 && /^\d{1,3}\.\d{3}$/.test(trimmed)) {
+      const parsed = Number(trimmed.replace('.', ''))
+      return Number.isFinite(parsed) ? parsed : 0
+    }
+
+    const parsed = Number(trimmed)
     return Number.isFinite(parsed) ? parsed : 0
   }
   return 0
@@ -117,7 +138,7 @@ export async function readExcelRows(file: File): Promise<RowRecord[]> {
 
   const rows = XLSX.utils.sheet_to_json<RowRecord>(workbook.Sheets[firstSheet], {
     defval: '',
-    raw: false,
+    raw: true,
   })
 
   if (rows.length === 0) {

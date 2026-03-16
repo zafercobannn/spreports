@@ -1,3 +1,4 @@
+import { useState } from 'react'
 import { Plus, Trash2 } from 'lucide-react'
 import { Button } from '@/components/ui/button'
 import type { CohortMatrix } from '@/types/cohort'
@@ -7,9 +8,91 @@ interface CohortHeatmapEditorProps {
   onChange: (next: CohortMatrix) => void
 }
 
+const SUFFIX_MULTIPLIERS: Record<string, number> = {
+  m: 1_000_000,
+  M: 1_000_000,
+  k: 1_000,
+  K: 1_000,
+  b: 1_000_000_000,
+  B: 1_000_000_000,
+}
+
+function parseSmartNumber(raw: string): number {
+  const trimmed = raw.trim()
+  if (!trimmed) return 0
+
+  const match = trimmed.match(/^([0-9.,\s]+)\s*([a-zA-Z])?$/)
+  if (!match) {
+    const normalized = trimmed.replace(',', '.')
+    const parsed = Number(normalized)
+    return Number.isFinite(parsed) ? parsed : 0
+  }
+
+  const numPart = match[1].replace(/\s/g, '')
+  const suffix = match[2] ?? ''
+
+  const normalized = numPart.includes(',') && numPart.includes('.')
+    ? numPart.replace(/\./g, '').replace(',', '.')
+    : numPart.replace(',', '.')
+  const parsed = Number(normalized)
+  if (!Number.isFinite(parsed)) return 0
+
+  const multiplier = SUFFIX_MULTIPLIERS[suffix] ?? 1
+  return parsed * multiplier
+}
+
+function formatCompact(value: number): string {
+  if (value === 0) return '0'
+  if (Math.abs(value) >= 1_000_000_000) {
+    const compact = value / 1_000_000_000
+    return Number.isInteger(compact) ? `${compact}B` : `${compact.toFixed(1)}B`
+  }
+  if (Math.abs(value) >= 1_000_000) {
+    const compact = value / 1_000_000
+    return Number.isInteger(compact) ? `${compact}M` : `${compact.toFixed(1)}M`
+  }
+  if (Math.abs(value) >= 1_000) {
+    const compact = value / 1_000
+    return Number.isInteger(compact) ? `${compact}K` : `${compact.toFixed(1)}K`
+  }
+  return String(value)
+}
+
 function toNumber(value: string): number {
-  const parsed = Number(value.replace(',', '.'))
-  return Number.isFinite(parsed) ? parsed : 0
+  return parseSmartNumber(value)
+}
+
+function SmartNumberCell({
+  value,
+  onCommit,
+  className,
+}: {
+  value: number
+  onCommit: (next: number) => void
+  className?: string
+}) {
+  const [draft, setDraft] = useState<string | null>(null)
+  const isFocused = draft !== null
+
+  const handleBlur = () => {
+    if (draft !== null) {
+      const parsed = parseSmartNumber(draft)
+      onCommit(Math.max(0, parsed))
+    }
+    setDraft(null)
+  }
+
+  return (
+    <input
+      type="text"
+      inputMode="decimal"
+      value={isFocused ? draft : formatCompact(value)}
+      onFocus={() => setDraft(value === 0 ? '' : String(value))}
+      onBlur={handleBlur}
+      onChange={(e) => setDraft(e.target.value)}
+      className={className}
+    />
+  )
 }
 
 export function CohortHeatmapEditor({ data, onChange }: CohortHeatmapEditorProps) {
@@ -34,7 +117,7 @@ export function CohortHeatmapEditor({ data, onChange }: CohortHeatmapEditorProps
   }
 
   const updateFirmCount = (rowIdx: number, value: string) => {
-    const firmCount = Math.max(0, Math.round(toNumber(value)))
+    const firmCount = Math.max(0, Math.round(parseSmartNumber(value)))
     onChange({
       ...data,
       rows: data.rows.map((row, idx) => (
@@ -153,7 +236,8 @@ export function CohortHeatmapEditor({ data, onChange }: CohortHeatmapEditorProps
                     <div className="flex items-center gap-2 text-xs text-muted-foreground">
                       <span>Firma</span>
                       <input
-                        type="number"
+                        type="text"
+                        inputMode="numeric"
                         value={row.firmCount}
                         onChange={(e) => updateFirmCount(rowIdx, e.target.value)}
                         className="h-7 w-20 rounded-md border border-border/80 bg-white px-2 text-xs text-foreground outline-none transition focus:border-primary/50 focus:ring-2 focus:ring-primary/20"
@@ -180,10 +264,9 @@ export function CohortHeatmapEditor({ data, onChange }: CohortHeatmapEditorProps
                         className="rounded-lg border border-white/70 p-2 transition-colors"
                         style={{ backgroundColor: `rgba(88, 127, 146, ${intensity})` }}
                       >
-                        <input
-                          type="number"
+                        <SmartNumberCell
                           value={value}
-                          onChange={(e) => updateCellValue(rowIdx, month, e.target.value)}
+                          onCommit={(next) => updateCellValue(rowIdx, month, String(next))}
                           className="h-8 w-full rounded-md border border-white/80 bg-white/85 px-2 text-right text-xs font-medium text-foreground outline-none transition focus:border-primary/50 focus:ring-2 focus:ring-primary/20"
                         />
                       </div>
@@ -214,12 +297,10 @@ export function CohortHeatmapEditor({ data, onChange }: CohortHeatmapEditorProps
                       onChange={(e) => updateTopFirm(rowIdx, topIdx, 'name', e.target.value)}
                       placeholder={`Top ${topIdx + 1} marka`}
                     />
-                    <input
-                      type="number"
-                      className="h-8 rounded-md border border-border/80 bg-white px-2 text-xs text-foreground outline-none transition focus:border-primary/50 focus:ring-2 focus:ring-primary/20"
+                    <SmartNumberCell
                       value={item.gpv}
-                      onChange={(e) => updateTopFirm(rowIdx, topIdx, 'gpv', e.target.value)}
-                      placeholder="GPV"
+                      onCommit={(next) => updateTopFirm(rowIdx, topIdx, 'gpv', String(next))}
+                      className="h-8 rounded-md border border-border/80 bg-white px-2 text-xs text-foreground outline-none transition focus:border-primary/50 focus:ring-2 focus:ring-primary/20"
                     />
                   </div>
                 )

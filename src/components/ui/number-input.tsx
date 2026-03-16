@@ -13,8 +13,12 @@ function formatValue(value: number): string {
 }
 
 function parseValue(raw: string): number | null {
-  const normalized = raw.replace(',', '.').trim()
-  if (!normalized) return null
+  const trimmed = raw.trim()
+  if (!trimmed) return null
+
+  const normalized = trimmed.includes(',') && trimmed.includes('.')
+    ? trimmed.replace(/\./g, '').replace(',', '.')
+    : trimmed.replace(',', '.')
 
   const parsed = Number(normalized)
   return Number.isFinite(parsed) ? parsed : null
@@ -41,7 +45,8 @@ export function NumberInput({
   return (
     <input
       {...props}
-      type="number"
+      type="text"
+      inputMode="decimal"
       value={draft}
       className={cn(className)}
       onFocus={(event) => {

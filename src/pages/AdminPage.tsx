@@ -393,15 +393,15 @@ function TargetsEditor({
 
           <label className="space-y-1">
             <span className="text-[11px] font-semibold tracking-[0.14em] text-muted-foreground uppercase xl:hidden">Tahmini Ciro</span>
-            <NumberInput
+            <input
               className={inputClassName}
               value={target.estimatedRevenue}
-              onValueChange={(value) =>
+              onChange={(event) =>
                 onChange(data.map((item, itemIndex) => (
-                  itemIndex === index ? { ...item, estimatedRevenue: value } : item
+                  itemIndex === index ? { ...item, estimatedRevenue: event.target.value } : item
                 )))
               }
-              placeholder="Tahmini ciro"
+              placeholder="Ör: 5M, 500K"
             />
           </label>
 
@@ -733,7 +733,7 @@ function AdminWorkspace() {
                   <FieldGroup label="Canlı Hesap / Onboarding">
                     <div className="grid grid-cols-1 gap-3 md:grid-cols-2 xl:grid-cols-2">
                       <MetricField
-                        label="Canlı Hesap Sayısı"
+                        label="Canlı Hesap Sayısı (SP)"
                         value={periodData.monthlyGPV.liveAccountCount}
                         onChange={(value) =>
                           patchPeriod((data) => ({
@@ -755,7 +755,7 @@ function AdminWorkspace() {
                       <ReadOnlyMetricField
                         label="Aylık Live Sayısı"
                         value={periodData.monthlyGPV.monthlyLiveCount}
-                        helper="Canlı SP + Premium Onboarding Live"
+                        helper="Canlı Hesap Sayısı (SP) + Premium Onboarding Live"
                       />
                       <MetricField
                         label="Premium Onboarding Live"
@@ -911,7 +911,7 @@ function AdminWorkspace() {
                 onClick={() =>
                   patchPeriod((data) => ({
                       ...data,
-                      targets: [...data.targets, { name: '', sector: '', estimatedRevenue: 0, status: 'not-live' }],
+                      targets: [...data.targets, { name: '', sector: '', estimatedRevenue: '', status: 'not-live' }],
                     }))
                   }
                 >

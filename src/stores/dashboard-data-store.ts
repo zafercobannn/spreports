@@ -321,10 +321,10 @@ function normalizePlatformCounts(value: unknown): DashboardPeriodData['monthlyGP
     .filter((item): item is DashboardPeriodData['monthlyGPV']['previousPlatformsSP'][number] => item !== null)
 }
 
-function calculateMonthlyLiveCount(liveSPCount: number, premiumOnboardingLiveCount: number): number {
-  const safeLiveSp = Math.max(0, toNumber(liveSPCount, 0))
+function calculateMonthlyLiveCount(liveAccountCount: number, premiumOnboardingLiveCount: number): number {
+  const safeLiveAccount = Math.max(0, toNumber(liveAccountCount, 0))
   const safePremium = Math.max(0, toNumber(premiumOnboardingLiveCount, 0))
-  return safeLiveSp + safePremium
+  return safeLiveAccount + safePremium
 }
 
 function normalizeCohortForMonth(
@@ -431,7 +431,7 @@ function createEmptyPeriodData(year: number, month: number): DashboardPeriodData
   const emptyData: DashboardPeriodData = {
     monthlyGPV: {
       ...monthlyGPV,
-      monthlyLiveCount: calculateMonthlyLiveCount(monthlyGPV.liveSPCount, monthlyGPV.premiumOnboardingLiveCount),
+      monthlyLiveCount: calculateMonthlyLiveCount(monthlyGPV.liveAccountCount, monthlyGPV.premiumOnboardingLiveCount),
     },
     cohort: createEmptyCohortForMonth(year, normalizedMonth),
     topFirms: [],
@@ -478,8 +478,9 @@ function sanitizePeriodData(year: number, month: number, raw: unknown): Dashboar
     toNumber(monthlyGPV.premiumOnboardingLiveCount, seed.monthlyGPV.premiumOnboardingLiveCount),
   )
   const normalizedLiveSPCount = Math.max(0, toNumber(monthlyGPV.liveSPCount, seed.monthlyGPV.liveSPCount))
+  const normalizedLiveAccountCount = Math.max(0, toNumber(monthlyGPV.liveAccountCount, seed.monthlyGPV.liveAccountCount))
   const normalizedMonthlyLiveCount = calculateMonthlyLiveCount(
-    normalizedLiveSPCount,
+    normalizedLiveAccountCount,
     normalizedPremiumOnboardingLiveCount,
   )
 
@@ -517,7 +518,11 @@ function sanitizePeriodData(year: number, month: number, raw: unknown): Dashboar
         return {
           name: typeof target.name === 'string' ? target.name : '',
           sector: typeof target.sector === 'string' ? target.sector : '',
-          estimatedRevenue: toNumber(target.estimatedRevenue, 0),
+          estimatedRevenue: typeof target.estimatedRevenue === 'string'
+            ? target.estimatedRevenue
+            : typeof target.estimatedRevenue === 'number'
+              ? String(target.estimatedRevenue)
+              : '',
           status: normalizeLegacyStatus(target.status),
         }
       }).filter((target): target is DashboardPeriodData['targets'][number] => target !== null)
