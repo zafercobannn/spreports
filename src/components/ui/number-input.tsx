@@ -10,7 +10,7 @@ interface NumberInputProps
 
 const displayFormatter = new Intl.NumberFormat('tr-TR', {
   minimumFractionDigits: 0,
-  maximumFractionDigits: 2,
+  maximumFractionDigits: 10,
 })
 
 function formatValue(value: number): string {
