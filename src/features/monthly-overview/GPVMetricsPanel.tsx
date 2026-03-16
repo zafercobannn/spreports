@@ -1,6 +1,6 @@
 import { KPICard } from '@/components/data-display/KPICard'
 import { KPICardGrid } from '@/components/data-display/KPICardGrid'
-import { formatCurrency, formatNumber, formatPercent } from '@/utils/format'
+import { formatCompactCurrency, formatNumber, formatPercent } from '@/utils/format'
 import { TurkishLira, Users, TrendingUp, Clock } from 'lucide-react'
 import type { MonthlyGPV } from '@/types/gpv'
 
@@ -17,12 +17,12 @@ export function GPVMetricsPanel({ data }: GPVMetricsPanelProps) {
     <KPICardGrid columns={4}>
       <KPICard
         label="GPV"
-        value={formatCurrency(data.ikasGPV)}
+        value={formatCompactCurrency(data.ikasGPV)}
         icon={<TurkishLira className="h-5 w-5" />}
       />
       <KPICard
         label="SP GPV"
-        value={formatCurrency(data.spGPV)}
+        value={formatCompactCurrency(data.spGPV)}
         icon={<TrendingUp className="h-5 w-5" />}
         subtitle={(
           <div className="mt-2 inline-flex items-center gap-2 rounded-lg border border-primary/30 bg-primary/10 px-2.5 py-1.5">

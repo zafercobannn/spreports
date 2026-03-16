@@ -2,7 +2,7 @@ const tryCurrencyFormatter = new Intl.NumberFormat('tr-TR', {
   style: 'currency',
   currency: 'TRY',
   minimumFractionDigits: 2,
-  maximumFractionDigits: 4,
+  maximumFractionDigits: 2,
 })
 
 const trNumberFormatter = new Intl.NumberFormat('tr-TR')
@@ -26,13 +26,23 @@ export function formatPercent(value: number): string {
 }
 
 export function formatCompactNumber(value: number): string {
-  if (value >= 1_000_000) {
-    return `${(value / 1_000_000).toFixed(1)} M`
+  if (Math.abs(value) >= 1_000_000) {
+    return `${(value / 1_000_000).toFixed(2)} M`
   }
-  if (value >= 1_000) {
+  if (Math.abs(value) >= 1_000) {
     return `${(value / 1_000).toFixed(1)} K`
   }
   return trNumberFormatter.format(value)
+}
+
+export function formatCompactCurrency(value: number): string {
+  if (Math.abs(value) >= 1_000_000) {
+    return `${(value / 1_000_000).toFixed(2)} M ₺`
+  }
+  if (Math.abs(value) >= 1_000) {
+    return `${(value / 1_000).toFixed(1)} K ₺`
+  }
+  return tryCurrencyFormatter.format(value)
 }
 
 export function formatDuration(days: number): string {
