@@ -1,5 +1,5 @@
-import type { HTMLAttributes, ReactNode } from 'react'
-import { Card } from '@/components/ui/card'
+import { useState, type HTMLAttributes, type ReactNode } from 'react'
+import { ChevronDown } from 'lucide-react'
 import { cn } from '@/lib/utils'
 
 interface AdminSectionCardProps extends HTMLAttributes<HTMLDivElement> {
@@ -7,6 +7,7 @@ interface AdminSectionCardProps extends HTMLAttributes<HTMLDivElement> {
   description?: string
   eyebrow?: string
   actions?: ReactNode
+  defaultOpen?: boolean
 }
 
 export function AdminSectionCard({
@@ -16,33 +17,59 @@ export function AdminSectionCard({
   actions,
   children,
   className,
+  defaultOpen = false,
   ...props
 }: AdminSectionCardProps) {
+  const [isOpen, setIsOpen] = useState(defaultOpen)
+
   return (
-    <Card
+    <div
       className={cn(
-        'overflow-hidden rounded-[2rem] border-black/10 bg-[linear-gradient(180deg,rgba(255,255,255,0.86)_0%,rgba(249,252,251,0.8)_100%)] shadow-[0_24px_70px_-60px_rgba(18,33,39,0.4)]',
+        'overflow-hidden rounded-2xl border border-black/8 bg-white/70 transition-shadow duration-200',
+        isOpen && 'shadow-[0_8px_30px_-12px_rgba(18,33,39,0.15)]',
         className,
       )}
       {...props}
     >
-      <div className="border-b border-black/8 px-5 py-6 sm:px-7">
-        <div className="flex flex-col gap-4 lg:flex-row lg:items-end lg:justify-between">
-          <div className="space-y-3">
+      <button
+        type="button"
+        onClick={() => setIsOpen(!isOpen)}
+        className="flex w-full items-center gap-4 px-5 py-4 text-left transition-colors hover:bg-white/90 sm:px-6"
+      >
+        <div className="min-w-0 flex-1">
+          <div className="flex items-center gap-3">
             {eyebrow && (
-              <p className="text-[11px] font-semibold tracking-[0.24em] text-muted-foreground uppercase">
+              <span className="shrink-0 rounded-md bg-primary/8 px-2 py-0.5 text-[10px] font-semibold tracking-wide uppercase text-primary">
                 {eyebrow}
-              </p>
+              </span>
             )}
-            <div className="space-y-1">
-              <h2 className="text-[1.8rem] leading-none font-medium tracking-[-0.04em] text-foreground">{title}</h2>
-              {description && <p className="max-w-2xl text-[15px] leading-6 text-muted-foreground">{description}</p>}
-            </div>
+            <h2 className="truncate text-base font-semibold tracking-tight text-foreground">
+              {title}
+            </h2>
           </div>
-          {actions && <div className="flex flex-wrap items-center gap-2">{actions}</div>}
+          {description && !isOpen && (
+            <p className="mt-1 truncate text-sm text-muted-foreground">{description}</p>
+          )}
         </div>
-      </div>
-      <div className="px-5 py-6 sm:px-7">{children}</div>
-    </Card>
+        <ChevronDown
+          className={cn(
+            'h-5 w-5 shrink-0 text-muted-foreground transition-transform duration-200',
+            isOpen && 'rotate-180',
+          )}
+        />
+      </button>
+
+      {isOpen && (
+        <div className="border-t border-black/6">
+          {(description || actions) && (
+            <div className="flex flex-col gap-3 border-b border-black/6 px-5 py-3 sm:flex-row sm:items-center sm:justify-between sm:px-6">
+              {description && <p className="text-sm text-muted-foreground">{description}</p>}
+              {actions && <div className="flex shrink-0 flex-wrap items-center gap-2">{actions}</div>}
+            </div>
+          )}
+          <div className="px-5 py-5 sm:px-6">{children}</div>
+        </div>
+      )}
+    </div>
   )
 }
