@@ -37,10 +37,12 @@ export function formatCompactNumber(value: number): string {
 
 export function formatCompactCurrency(value: number): string {
   if (Math.abs(value) >= 1_000_000) {
-    return `${(value / 1_000_000).toFixed(2)} M ₺`
+    const compact = (value / 1_000_000).toFixed(2).replace('.', ',')
+    return `${compact} M ₺`
   }
   if (Math.abs(value) >= 1_000) {
-    return `${(value / 1_000).toFixed(1)} K ₺`
+    const compact = (value / 1_000).toFixed(2).replace('.', ',')
+    return `${compact} K ₺`
   }
   return tryCurrencyFormatter.format(value)
 }

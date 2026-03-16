@@ -8,19 +8,43 @@ interface NumberInputProps
   emptyValue?: number
 }
 
+const displayFormatter = new Intl.NumberFormat('tr-TR', {
+  minimumFractionDigits: 0,
+  maximumFractionDigits: 2,
+})
+
 function formatValue(value: number): string {
-  return Number.isFinite(value) ? String(value) : ''
+  if (!Number.isFinite(value)) return ''
+  return displayFormatter.format(value)
 }
 
 function parseValue(raw: string): number | null {
   const trimmed = raw.trim()
   if (!trimmed) return null
 
-  const normalized = trimmed.includes(',') && trimmed.includes('.')
-    ? trimmed.replace(/\./g, '').replace(',', '.')
-    : trimmed.replace(',', '.')
+  if (trimmed.includes(',') && trimmed.includes('.')) {
+    const normalized = trimmed.replace(/\./g, '').replace(',', '.')
+    const parsed = Number(normalized)
+    return Number.isFinite(parsed) ? parsed : null
+  }
 
-  const parsed = Number(normalized)
+  if (trimmed.includes(',')) {
+    const parsed = Number(trimmed.replace(',', '.'))
+    return Number.isFinite(parsed) ? parsed : null
+  }
+
+  const dotCount = (trimmed.match(/\./g) ?? []).length
+  if (dotCount > 1) {
+    const parsed = Number(trimmed.replace(/\./g, ''))
+    return Number.isFinite(parsed) ? parsed : null
+  }
+
+  if (dotCount === 1 && /^\d{1,3}\.\d{3}$/.test(trimmed)) {
+    const parsed = Number(trimmed.replace('.', ''))
+    return Number.isFinite(parsed) ? parsed : null
+  }
+
+  const parsed = Number(trimmed)
   return Number.isFinite(parsed) ? parsed : null
 }
 
