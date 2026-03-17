@@ -40,7 +40,8 @@ export function RepresentativeMonthlyNpsChart({
   const ensurePeriod = useDashboardDataStore((s) => s.ensurePeriod)
 
   const rollingWindow = useMemo(
-    () => buildRollingPeriodWindow(year, month, 7),
+    () => buildRollingPeriodWindow(year, month, 3)
+      .filter((item) => item.year >= 2026),
     [year, month],
   )
 
@@ -226,7 +227,7 @@ export function RepresentativeMonthlyNpsChart({
   return (
     <ChartContainer
       title="Canlıya Alma Süreci - Ortalama Canlıya Alma Süresi"
-      subtitle="Temsilci bazlı ortalama canlıya alma süresi (gün) - seçili ay dahil son 7 ay"
+      subtitle="Temsilci bazlı ortalama canlıya alma süresi (gün) - son 3 ay (2026'dan itibaren)"
       height={420}
       isEmpty={!hasAnyData || representativeNames.length === 0}
     >

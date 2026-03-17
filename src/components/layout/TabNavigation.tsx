@@ -18,11 +18,11 @@ interface TabNavigationProps {
 const TABS: { id: DashboardTab; label: string; icon: typeof BarChart3 }[] = [
   { id: 'monthly', label: 'Aylık Bakış', icon: BarChart3 },
   { id: 'comparison', label: 'Önceki Ay Karşılaştırma', icon: BarChartHorizontalBig },
-  { id: 'cohort', label: 'Cohort Analizi', icon: Grid3X3 },
   { id: 'top-firms', label: 'Top 15 Firma', icon: Trophy },
   { id: 'realized-targets', label: 'Gerçekleşen Hedef', icon: Target },
-  { id: 'x-month-target', label: 'Bir Sonraki Ay Hedef', icon: Flag },
+  { id: 'cohort', label: 'Cohort Analizi', icon: Grid3X3 },
   { id: 'team', label: 'Ekip Performans', icon: Users },
+  { id: 'x-month-target', label: 'Bir Sonraki Ay Hedef', icon: Flag },
 ]
 
 export function TabNavigation({ activeTab, onTabChange }: TabNavigationProps) {
