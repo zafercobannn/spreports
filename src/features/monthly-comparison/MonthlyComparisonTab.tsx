@@ -223,8 +223,8 @@ export function MonthlyComparisonTab() {
         id: 'shikas',
         label: 'Shikas',
         valueType: 'k',
-        previousValue: Math.max(0, previousMonthly?.spGPV ?? 0),
-        currentValue: Math.max(0, currentMonthly?.spGPV ?? 0),
+        previousValue: Math.max(0, previousMonthly?.shikasGPV ?? 0),
+        currentValue: Math.max(0, currentMonthly?.shikasGPV ?? 0),
       },
       {
         id: 'live-sp',

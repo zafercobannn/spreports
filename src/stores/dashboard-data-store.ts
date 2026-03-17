@@ -426,6 +426,7 @@ function createEmptyPeriodData(year: number, month: number): DashboardPeriodData
     scalePlusAvgGoLiveDurationDays: 0,
     previousPlatformsSP: [],
     previousPlatformsPremiumOnboarding: [],
+    shikasGPV: 0,
     gpvShare: 0,
     shikasShare: 0,
     liveSPShare: 0,

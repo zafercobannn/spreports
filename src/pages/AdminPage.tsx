@@ -152,6 +152,7 @@ function ComparisonDataEditor({
 }) {
   const valueFields = [
     { key: 'spGPV', label: 'SP GPV' },
+    { key: 'shikasGPV', label: 'Shikas' },
     { key: 'liveSPCount', label: 'En az 1 kere ödeme almış SP' },
   ] as const
 
