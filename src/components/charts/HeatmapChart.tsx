@@ -37,7 +37,7 @@ export function HeatmapChart({
       borderRadius={4}
       borderWidth={1}
       borderColor="#eceef1"
-      labelTextColor="#f8fafc"
+      labelTextColor="#111827"
       theme={{
         ...dashboardChartTheme,
         labels: {
