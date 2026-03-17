@@ -21,8 +21,6 @@ interface ComparisonMetric {
 interface ManualShares {
   previousGpvShare: number
   currentGpvShare: number
-  previousShikasShare: number
-  currentShikasShare: number
   previousLiveSPShare: number
   currentLiveSPShare: number
 }
@@ -76,8 +74,7 @@ function formatPercent(value: number): string {
 }
 
 const SHARE_KEYS: Record<string, { prev: keyof ManualShares; curr: keyof ManualShares }> = {
-  gpv: { prev: 'previousGpvShare', curr: 'currentGpvShare' },
-  shikas: { prev: 'previousShikasShare', curr: 'currentShikasShare' },
+  'sp-gpv': { prev: 'previousGpvShare', curr: 'currentGpvShare' },
   'live-sp': { prev: 'previousLiveSPShare', curr: 'currentLiveSPShare' },
 }
 
@@ -213,15 +210,8 @@ export function MonthlyComparisonTab() {
 
     return [
       {
-        id: 'gpv',
-        label: 'GPV',
-        valueType: 'k',
-        previousValue: Math.max(0, previousMonthly?.ikasGPV ?? 0),
-        currentValue: Math.max(0, currentMonthly?.ikasGPV ?? 0),
-      },
-      {
-        id: 'shikas',
-        label: 'Shikas',
+        id: 'sp-gpv',
+        label: 'SP GPV',
         valueType: 'k',
         previousValue: Math.max(0, previousMonthly?.spGPV ?? 0),
         currentValue: Math.max(0, currentMonthly?.spGPV ?? 0),
@@ -244,8 +234,6 @@ export function MonthlyComparisonTab() {
   const manualShares = useMemo<ManualShares>(() => ({
     previousGpvShare: previousPeriodData?.monthlyGPV?.gpvShare ?? 0,
     currentGpvShare: currentPeriodData?.monthlyGPV?.gpvShare ?? 0,
-    previousShikasShare: previousPeriodData?.monthlyGPV?.shikasShare ?? 0,
-    currentShikasShare: currentPeriodData?.monthlyGPV?.shikasShare ?? 0,
     previousLiveSPShare: previousPeriodData?.monthlyGPV?.liveSPShare ?? 0,
     currentLiveSPShare: currentPeriodData?.monthlyGPV?.liveSPShare ?? 0,
   }), [previousPeriodData?.monthlyGPV, currentPeriodData?.monthlyGPV])

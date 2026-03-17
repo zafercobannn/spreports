@@ -151,14 +151,12 @@ function ComparisonDataEditor({
   onPreviousChange: (field: string, value: number) => void
 }) {
   const valueFields = [
-    { key: 'ikasGPV', label: 'GPV' },
-    { key: 'spGPV', label: 'Shikas (SP GPV)' },
+    { key: 'spGPV', label: 'SP GPV' },
     { key: 'liveSPCount', label: 'En az 1 kere ödeme almış SP' },
   ] as const
 
   const shareFields = [
-    { key: 'gpvShare', label: 'GPV Oranı (%)' },
-    { key: 'shikasShare', label: 'Shikas Oranı (%)' },
+    { key: 'gpvShare', label: 'SP GPV Oranı (%)' },
     { key: 'liveSPShare', label: 'En az 1 kere ödeme almış Oranı (%)' },
   ] as const
 
