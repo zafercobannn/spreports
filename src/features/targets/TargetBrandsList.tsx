@@ -12,16 +12,18 @@ export function TargetBrandsList({ data, showStatus = true }: TargetBrandsListPr
     {
       key: 'name',
       header: 'Marka',
+      align: 'center',
       render: (row) => <span className="font-medium">{row.name}</span>,
     },
     {
       key: 'sector',
       header: 'Sektör',
+      align: 'center',
     },
     {
       key: 'estimatedRevenue',
       header: 'Tahmini Ciro',
-      align: 'right',
+      align: 'center',
       sortable: true,
       render: (row) => row.estimatedRevenue || '—',
     },
