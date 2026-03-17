@@ -10,7 +10,7 @@ const trNumberFormatter = new Intl.NumberFormat('tr-TR')
 const trPercentFormatter = new Intl.NumberFormat('tr-TR', {
   style: 'percent',
   minimumFractionDigits: 0,
-  maximumFractionDigits: 10,
+  maximumFractionDigits: 2,
 })
 
 export function formatCurrency(value: number): string {
