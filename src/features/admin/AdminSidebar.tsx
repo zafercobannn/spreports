@@ -137,11 +137,29 @@ export function AdminSidebar({
               Dashboard
             </Button>
           </Link>
-          <Button variant="ghost" size="sm" className="w-full justify-start rounded-lg text-xs" onClick={onResetPeriod}>
+          <Button
+            variant="ghost"
+            size="sm"
+            className="w-full justify-start rounded-lg text-xs"
+            onClick={() => {
+              if (window.confirm('Bu döneme ait tüm veriler sıfırlanacak. Emin misiniz?')) {
+                onResetPeriod()
+              }
+            }}
+          >
             <RotateCcw className="mr-2 h-3.5 w-3.5" />
             Bu Dönemi Sıfırla
           </Button>
-          <Button variant="ghost" size="sm" className="w-full justify-start rounded-lg text-xs text-destructive hover:text-destructive" onClick={onResetAll}>
+          <Button
+            variant="ghost"
+            size="sm"
+            className="w-full justify-start rounded-lg text-xs text-destructive hover:text-destructive"
+            onClick={() => {
+              if (window.confirm('Tüm dönemlere ait veriler kalıcı olarak silinecek. Bu işlem geri alınamaz. Emin misiniz?')) {
+                onResetAll()
+              }
+            }}
+          >
             <RotateCcw className="mr-2 h-3.5 w-3.5" />
             Tüm Veriyi Sıfırla
           </Button>
