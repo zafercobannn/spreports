@@ -154,7 +154,7 @@ function PlatformEditorPanel({
 
         {items.map((platform, index) => (
           <div
-            key={`${platform.name}-${index}`}
+            key={index}
             className="grid grid-cols-1 gap-2 rounded-lg border border-black/6 bg-white/50 p-3 md:grid-cols-[minmax(0,1fr)_170px_42px]"
           >
             <label className="space-y-1">
@@ -239,7 +239,7 @@ function TopFirmsEditor({
 
         return (
           <div
-            key={`${firm.name}-${index}`}
+            key={index}
             className="grid grid-cols-1 gap-2 rounded-lg border border-black/6 bg-white/50 p-3 xl:grid-cols-[56px_minmax(0,1.4fr)_160px_160px_120px_170px_170px_44px]"
           >
             <div className="space-y-1">
@@ -431,7 +431,7 @@ function TargetsEditor({
 
       {data.map((target, index) => (
         <div
-          key={`${target.name}-${index}`}
+          key={index}
           className="grid grid-cols-1 gap-2 rounded-lg border border-black/6 bg-white/50 p-3 xl:grid-cols-[minmax(0,1.2fr)_minmax(0,1.1fr)_180px_180px_44px]"
         >
           <label className="space-y-1">
