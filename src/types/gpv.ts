@@ -13,6 +13,9 @@ export interface MonthlyGPV {
   scalePlusAvgGoLiveDurationDays: number
   previousPlatformsSP: PlatformCount[]
   previousPlatformsPremiumOnboarding: PlatformCount[]
+  gpvShare: number
+  shikasShare: number
+  liveSPShare: number
   // Legacy alanlar: eski local veriyi bozmayalım.
   avgGoLiveDurationDays?: number
   previousPlatforms?: PlatformCount[]

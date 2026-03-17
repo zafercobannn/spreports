@@ -150,20 +150,26 @@ function ComparisonDataEditor({
   onCurrentChange: (field: string, value: number) => void
   onPreviousChange: (field: string, value: number) => void
 }) {
-  const fields = [
+  const valueFields = [
     { key: 'ikasGPV', label: 'GPV' },
     { key: 'spGPV', label: 'Shikas (SP GPV)' },
     { key: 'liveSPCount', label: 'En az 1 kere ödeme almış SP' },
   ] as const
 
+  const shareFields = [
+    { key: 'gpvShare', label: 'GPV Oranı (%)' },
+    { key: 'shikasShare', label: 'Shikas Oranı (%)' },
+    { key: 'liveSPShare', label: 'Live SP Oranı (%)' },
+  ] as const
+
   return (
-    <div className="space-y-3">
+    <div className="space-y-5">
       <div className="grid grid-cols-[minmax(0,1fr)_minmax(0,1fr)_minmax(0,1fr)] gap-3">
         <div />
         <p className="text-center text-[11px] font-semibold tracking-[0.14em] text-muted-foreground uppercase">{previousLabel}</p>
         <p className="text-center text-[11px] font-semibold tracking-[0.14em] text-muted-foreground uppercase">{currentLabel}</p>
       </div>
-      {fields.map(({ key, label }) => (
+      {valueFields.map(({ key, label }) => (
         <div key={key} className="grid grid-cols-[minmax(0,1fr)_minmax(0,1fr)_minmax(0,1fr)] items-center gap-3">
           <span className="text-sm font-medium text-foreground">{label}</span>
           <NumberInput
@@ -178,6 +184,25 @@ function ComparisonDataEditor({
           />
         </div>
       ))}
+
+      <div className="border-t border-black/8 pt-4">
+        <p className="mb-3 text-xs font-semibold tracking-wide text-muted-foreground uppercase">Grafik Oranları (%)</p>
+        {shareFields.map(({ key, label }) => (
+          <div key={key} className="mb-3 grid grid-cols-[minmax(0,1fr)_minmax(0,1fr)_minmax(0,1fr)] items-center gap-3">
+            <span className="text-sm font-medium text-foreground">{label}</span>
+            <NumberInput
+              value={(previousData as Record<string, unknown> | undefined)?.[key] as number ?? 0}
+              onValueChange={(v) => onPreviousChange(key, v)}
+              className={inputClassName}
+            />
+            <NumberInput
+              value={(currentData as Record<string, unknown> | undefined)?.[key] as number ?? 0}
+              onValueChange={(v) => onCurrentChange(key, v)}
+              className={inputClassName}
+            />
+          </div>
+        ))}
+      </div>
     </div>
   )
 }

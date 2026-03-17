@@ -18,9 +18,13 @@ interface ComparisonMetric {
   currentValue: number
 }
 
-interface SpGpvContext {
-  previousSpGPV: number
-  currentSpGPV: number
+interface ManualShares {
+  previousGpvShare: number
+  currentGpvShare: number
+  previousShikasShare: number
+  currentShikasShare: number
+  previousLiveSPShare: number
+  currentLiveSPShare: number
 }
 
 interface ComparisonBarDatum extends BarDatum {
@@ -71,11 +75,19 @@ function formatPercent(value: number): string {
   return `%${value.toFixed(2)}`
 }
 
-function buildChartRows(metrics: ComparisonMetric[], spGpv: SpGpvContext): ComparisonBarDatum[] {
-  const spTotal = Math.max(spGpv.previousSpGPV + spGpv.currentSpGPV, 1)
+const SHARE_KEYS: Record<string, { prev: keyof ManualShares; curr: keyof ManualShares }> = {
+  gpv: { prev: 'previousGpvShare', curr: 'currentGpvShare' },
+  shikas: { prev: 'previousShikasShare', curr: 'currentShikasShare' },
+  'live-sp': { prev: 'previousLiveSPShare', curr: 'currentLiveSPShare' },
+}
 
+function buildChartRows(metrics: ComparisonMetric[], shares: ManualShares): ComparisonBarDatum[] {
   return metrics.map((metric) => {
     const pairMax = Math.max(metric.previousValue, metric.currentValue, 1)
+    const keys = SHARE_KEYS[metric.id]
+
+    const prevShare = keys ? shares[keys.prev] : 0
+    const currShare = keys ? shares[keys.curr] : 0
 
     return {
       metric: metric.label,
@@ -84,8 +96,8 @@ function buildChartRows(metrics: ComparisonMetric[], spGpv: SpGpvContext): Compa
       current: (metric.currentValue / pairMax) * 100,
       previousRaw: metric.previousValue,
       currentRaw: metric.currentValue,
-      previousShare: (spGpv.previousSpGPV / spTotal) * 100,
-      currentShare: (spGpv.currentSpGPV / spTotal) * 100,
+      previousShare: prevShare,
+      currentShare: currShare,
     }
   })
 }
@@ -229,12 +241,16 @@ export function MonthlyComparisonTab() {
     [metrics],
   )
 
-  const spGpvContext = useMemo<SpGpvContext>(() => ({
-    previousSpGPV: Math.max(0, previousPeriodData?.monthlyGPV?.spGPV ?? 0),
-    currentSpGPV: Math.max(0, currentPeriodData?.monthlyGPV?.spGPV ?? 0),
-  }), [previousPeriodData?.monthlyGPV?.spGPV, currentPeriodData?.monthlyGPV?.spGPV])
+  const manualShares = useMemo<ManualShares>(() => ({
+    previousGpvShare: previousPeriodData?.monthlyGPV?.gpvShare ?? 0,
+    currentGpvShare: currentPeriodData?.monthlyGPV?.gpvShare ?? 0,
+    previousShikasShare: previousPeriodData?.monthlyGPV?.shikasShare ?? 0,
+    currentShikasShare: currentPeriodData?.monthlyGPV?.shikasShare ?? 0,
+    previousLiveSPShare: previousPeriodData?.monthlyGPV?.liveSPShare ?? 0,
+    currentLiveSPShare: currentPeriodData?.monthlyGPV?.liveSPShare ?? 0,
+  }), [previousPeriodData?.monthlyGPV, currentPeriodData?.monthlyGPV])
 
-  const chartData = useMemo(() => buildChartRows(metrics, spGpvContext), [metrics, spGpvContext])
+  const chartData = useMemo(() => buildChartRows(metrics, manualShares), [metrics, manualShares])
   const shareLabelLayer = useMemo(() => createShareLabelLayer(), [])
   const valueLabelLayer = useMemo(() => createValueLabelLayer(), [])
   const monthLabelLayer = useMemo(
