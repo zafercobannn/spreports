@@ -18,6 +18,11 @@ interface ComparisonMetric {
   currentValue: number
 }
 
+interface SpGpvContext {
+  previousSpGPV: number
+  currentSpGPV: number
+}
+
 interface ComparisonBarDatum extends BarDatum {
   metric: string
   valueType: MetricValueType
@@ -66,10 +71,11 @@ function formatPercent(value: number): string {
   return `%${value.toFixed(2)}`
 }
 
-function buildChartRows(metrics: ComparisonMetric[]): ComparisonBarDatum[] {
+function buildChartRows(metrics: ComparisonMetric[], spGpv: SpGpvContext): ComparisonBarDatum[] {
+  const spTotal = Math.max(spGpv.previousSpGPV + spGpv.currentSpGPV, 1)
+
   return metrics.map((metric) => {
     const pairMax = Math.max(metric.previousValue, metric.currentValue, 1)
-    const pairTotal = Math.max(metric.previousValue + metric.currentValue, 1)
 
     return {
       metric: metric.label,
@@ -78,8 +84,8 @@ function buildChartRows(metrics: ComparisonMetric[]): ComparisonBarDatum[] {
       current: (metric.currentValue / pairMax) * 100,
       previousRaw: metric.previousValue,
       currentRaw: metric.currentValue,
-      previousShare: (metric.previousValue / pairTotal) * 100,
-      currentShare: (metric.currentValue / pairTotal) * 100,
+      previousShare: (spGpv.previousSpGPV / spTotal) * 100,
+      currentShare: (spGpv.currentSpGPV / spTotal) * 100,
     }
   })
 }
@@ -223,7 +229,12 @@ export function MonthlyComparisonTab() {
     [metrics],
   )
 
-  const chartData = useMemo(() => buildChartRows(metrics), [metrics])
+  const spGpvContext = useMemo<SpGpvContext>(() => ({
+    previousSpGPV: Math.max(0, previousPeriodData?.monthlyGPV?.spGPV ?? 0),
+    currentSpGPV: Math.max(0, currentPeriodData?.monthlyGPV?.spGPV ?? 0),
+  }), [previousPeriodData?.monthlyGPV?.spGPV, currentPeriodData?.monthlyGPV?.spGPV])
+
+  const chartData = useMemo(() => buildChartRows(metrics, spGpvContext), [metrics, spGpvContext])
   const shareLabelLayer = useMemo(() => createShareLabelLayer(), [])
   const valueLabelLayer = useMemo(() => createValueLabelLayer(), [])
   const monthLabelLayer = useMemo(

@@ -37,6 +37,7 @@ const smallInputClassName =
 
 const adminSectionItems = [
   { id: 'general', label: 'Genel Veriler' },
+  { id: 'comparison', label: 'Önceki Ay Karşılaştırma' },
   { id: 'top-firms', label: 'Top Firmalar' },
   { id: 'target-counts', label: 'Hedef Adet Takibi' },
   { id: 'targets', label: 'Hedef Markalar' },
@@ -130,6 +131,53 @@ function ReadOnlyMetricField({
         <p className="text-sm font-semibold text-foreground">{value}</p>
         {helper && <p className="text-[11px] text-muted-foreground">{helper}</p>}
       </div>
+    </div>
+  )
+}
+
+function ComparisonDataEditor({
+  currentLabel,
+  previousLabel,
+  currentData,
+  previousData,
+  onCurrentChange,
+  onPreviousChange,
+}: {
+  currentLabel: string
+  previousLabel: string
+  currentData: DashboardPeriodData['monthlyGPV'] | undefined
+  previousData: DashboardPeriodData['monthlyGPV'] | undefined
+  onCurrentChange: (field: string, value: number) => void
+  onPreviousChange: (field: string, value: number) => void
+}) {
+  const fields = [
+    { key: 'ikasGPV', label: 'GPV' },
+    { key: 'spGPV', label: 'Shikas (SP GPV)' },
+    { key: 'liveSPCount', label: 'En az 1 kere ödeme almış SP' },
+  ] as const
+
+  return (
+    <div className="space-y-3">
+      <div className="grid grid-cols-[minmax(0,1fr)_minmax(0,1fr)_minmax(0,1fr)] gap-3">
+        <div />
+        <p className="text-center text-[11px] font-semibold tracking-[0.14em] text-muted-foreground uppercase">{previousLabel}</p>
+        <p className="text-center text-[11px] font-semibold tracking-[0.14em] text-muted-foreground uppercase">{currentLabel}</p>
+      </div>
+      {fields.map(({ key, label }) => (
+        <div key={key} className="grid grid-cols-[minmax(0,1fr)_minmax(0,1fr)_minmax(0,1fr)] items-center gap-3">
+          <span className="text-sm font-medium text-foreground">{label}</span>
+          <NumberInput
+            value={(previousData as Record<string, unknown> | undefined)?.[key] as number ?? 0}
+            onValueChange={(v) => onPreviousChange(key, v)}
+            className={inputClassName}
+          />
+          <NumberInput
+            value={(currentData as Record<string, unknown> | undefined)?.[key] as number ?? 0}
+            onValueChange={(v) => onCurrentChange(key, v)}
+            className={inputClassName}
+          />
+        </div>
+      ))}
     </div>
   )
 }
@@ -519,7 +567,16 @@ function AdminWorkspace() {
 
   const periodKey = useMemo(() => getPeriodKey(editYear, editMonth), [editYear, editMonth])
 
+  const prevMonth = useMemo(() => {
+    let m = editMonth - 1
+    let y = editYear
+    if (m < 1) { m = 12; y -= 1 }
+    return { year: y, month: m }
+  }, [editYear, editMonth])
+  const prevPeriodKey = useMemo(() => getPeriodKey(prevMonth.year, prevMonth.month), [prevMonth.year, prevMonth.month])
+
   const periodData = useDashboardDataStore((state) => state.periods[periodKey])
+  const prevPeriodData = useDashboardDataStore((state) => state.periods[prevPeriodKey])
   const cloudSync = useDashboardDataStore((state) => state.cloudSyncByPeriod[periodKey])
   const ensurePeriod = useDashboardDataStore((state) => state.ensurePeriod)
   const savePeriodNow = useDashboardDataStore((state) => state.savePeriodNow)
@@ -529,6 +586,7 @@ function AdminWorkspace() {
 
   const sectionRefs = useRef<Record<AdminSectionId, HTMLElement | null>>({
     general: null,
+    comparison: null,
     'top-firms': null,
     'target-counts': null,
     targets: null,
@@ -538,7 +596,8 @@ function AdminWorkspace() {
 
   useEffect(() => {
     ensurePeriod(editYear, editMonth)
-  }, [editMonth, editYear, ensurePeriod])
+    ensurePeriod(prevMonth.year, prevMonth.month)
+  }, [editMonth, editYear, ensurePeriod, prevMonth.year, prevMonth.month])
 
   useEffect(() => {
     if (!periodData) return
@@ -569,6 +628,10 @@ function AdminWorkspace() {
 
   const patchPeriod = (updater: (current: DashboardPeriodData) => DashboardPeriodData) => {
     updatePeriodData(editYear, editMonth, updater)
+  }
+
+  const patchPrevPeriod = (updater: (current: DashboardPeriodData) => DashboardPeriodData) => {
+    updatePeriodData(prevMonth.year, prevMonth.month, updater)
   }
 
   const handlePlatformImport = async (file: File | null, mode: 'sp' | 'premium') => {
@@ -900,6 +963,37 @@ function AdminWorkspace() {
                   </div>
                 </div>
               </div>
+            </AdminSectionCard>
+          </section>
+
+          <section
+            ref={setSectionRef('comparison')}
+            data-section="comparison"
+            className="scroll-mt-24 space-y-4 lg:scroll-mt-28"
+          >
+            <AdminSectionCard
+              eyebrow="Karşılaştırma"
+              title="Önceki Ay Karşılaştırma Verileri"
+              description={`${getMonthName(prevMonth.month)} ${prevMonth.year} ve ${getMonthName(editMonth)} ${editYear} verilerini yan yana düzenle.`}
+            >
+              <ComparisonDataEditor
+                currentLabel={`${getMonthName(editMonth)} ${editYear}`}
+                previousLabel={`${getMonthName(prevMonth.month)} ${prevMonth.year}`}
+                currentData={periodData?.monthlyGPV}
+                previousData={prevPeriodData?.monthlyGPV}
+                onCurrentChange={(field, value) =>
+                  patchPeriod((data) => ({
+                    ...data,
+                    monthlyGPV: { ...data.monthlyGPV, [field]: value },
+                  }))
+                }
+                onPreviousChange={(field, value) =>
+                  patchPrevPeriod((data) => ({
+                    ...data,
+                    monthlyGPV: { ...data.monthlyGPV, [field]: value },
+                  }))
+                }
+              />
             </AdminSectionCard>
           </section>
 

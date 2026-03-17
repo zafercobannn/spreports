@@ -38,7 +38,12 @@ export function HeatmapChart({
       borderWidth={1}
       borderColor="#eceef1"
       labelTextColor="#f8fafc"
-      theme={dashboardChartTheme}
+      theme={{
+        ...dashboardChartTheme,
+        labels: {
+          text: { fontSize: 14, fontWeight: 700 },
+        },
+      }}
       animate
       motionConfig="gentle"
       label={(d) => {

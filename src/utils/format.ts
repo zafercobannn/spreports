@@ -9,8 +9,8 @@ const trNumberFormatter = new Intl.NumberFormat('tr-TR')
 
 const trPercentFormatter = new Intl.NumberFormat('tr-TR', {
   style: 'percent',
-  minimumFractionDigits: 1,
-  maximumFractionDigits: 1,
+  minimumFractionDigits: 0,
+  maximumFractionDigits: 10,
 })
 
 export function formatCurrency(value: number): string {
@@ -26,6 +26,9 @@ export function formatPercent(value: number): string {
 }
 
 export function formatCompactNumber(value: number): string {
+  if (Math.abs(value) >= 1_000_000_000) {
+    return `${(value / 1_000_000_000).toFixed(2)} B`
+  }
   if (Math.abs(value) >= 1_000_000) {
     return `${(value / 1_000_000).toFixed(2)} M`
   }
@@ -36,13 +39,17 @@ export function formatCompactNumber(value: number): string {
 }
 
 export function formatCompactCurrency(value: number): string {
+  if (Math.abs(value) >= 1_000_000_000) {
+    const compact = (value / 1_000_000_000).toFixed(2).replace('.', ',')
+    return `${compact}B ₺`
+  }
   if (Math.abs(value) >= 1_000_000) {
     const compact = (value / 1_000_000).toFixed(2).replace('.', ',')
-    return `${compact} M ₺`
+    return `${compact}M ₺`
   }
   if (Math.abs(value) >= 1_000) {
     const compact = (value / 1_000).toFixed(2).replace('.', ',')
-    return `${compact} K ₺`
+    return `${compact}K ₺`
   }
   return tryCurrencyFormatter.format(value)
 }

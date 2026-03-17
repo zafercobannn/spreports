@@ -1,6 +1,6 @@
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card'
 import { Badge } from '@/components/ui/badge'
-import { formatCurrency } from '@/utils/format'
+import { formatCompactCurrency } from '@/utils/format'
 import { Trophy } from 'lucide-react'
 import type { CohortRow } from '@/types/cohort'
 
@@ -30,7 +30,7 @@ export function CohortTopFirms({ rows }: CohortTopFirmsProps) {
                     <span className="text-sm font-medium">{firm.name}</span>
                   </div>
                   <span className="text-sm text-muted-foreground">
-                    {formatCurrency(firm.gpv)}
+                    {formatCompactCurrency(firm.gpv)}
                   </span>
                 </div>
               ))}
