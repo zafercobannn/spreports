@@ -157,6 +157,7 @@ function ComparisonDataEditor({
 
   const shareFields = [
     { key: 'gpvShare', label: 'SP GPV Oranı (%)' },
+    { key: 'shikasShare', label: 'Shikas Oranı (%)' },
     { key: 'liveSPShare', label: 'En az 1 kere ödeme almış Oranı (%)' },
   ] as const
 
