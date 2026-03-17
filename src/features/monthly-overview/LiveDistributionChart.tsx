@@ -13,7 +13,7 @@ export function LiveDistributionChart({ data }: LiveDistributionChartProps) {
     { kategori: 'Toplam Live', adet: data.monthlyLiveCount },
     { kategori: 'Canlı SP', adet: liveSpCount },
     { kategori: 'Premium Onboarding', adet: data.premiumOnboardingLiveCount },
-  ]
+  ].sort((a, b) => b.adet - a.adet)
 
   const maxValue = Math.max(...chartData.map((item) => Number(item.adet) || 0), 10)
   const yMax = Math.ceil(maxValue * 1.1)
@@ -30,8 +30,9 @@ export function LiveDistributionChart({ data }: LiveDistributionChartProps) {
         colors={['#f28a74']}
         borderRadius={6}
         enableLabel
-        labelSkipWidth={16}
-        labelSkipHeight={16}
+        labelSkipWidth={0}
+        labelSkipHeight={0}
+        label={(d) => Number(d.value).toLocaleString('tr-TR')}
         labelTextColor="#2a3f47"
         axisTop={null}
         axisRight={null}

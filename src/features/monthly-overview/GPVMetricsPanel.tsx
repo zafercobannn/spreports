@@ -9,10 +9,6 @@ interface GPVMetricsPanelProps {
 }
 
 export function GPVMetricsPanel({ data }: GPVMetricsPanelProps) {
-  const premiumShare = data.monthlyLiveCount > 0
-    ? (data.premiumOnboardingLiveCount / data.monthlyLiveCount) * 100
-    : 0
-
   return (
     <KPICardGrid columns={4}>
       <KPICard
@@ -52,12 +48,10 @@ export function GPVMetricsPanel({ data }: GPVMetricsPanelProps) {
       <KPICard
         label="Aylık Live Sayısı"
         value={formatNumber(data.monthlyLiveCount)}
-        subtitle={`Canlı Hesap (SP) (${formatNumber(data.liveAccountCount)}) + Premium (${formatNumber(data.premiumOnboardingLiveCount)})`}
       />
       <KPICard
         label="Premium Onboarding"
         value={formatNumber(data.premiumOnboardingLiveCount)}
-        subtitle={`${formatPercent(premiumShare)} toplamın`}
       />
       <KPICard
         label="Premium Onboarding Ort. Canlıya Alma Süresi"
