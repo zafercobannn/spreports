@@ -261,7 +261,6 @@ export async function loadDashboardPeriodFromCloud(
   month: number,
 ): Promise<DashboardPeriodData | null> {
   if (!isCloudPersistenceEnabled()) return null
-  requireAdminFirebaseUser()
 
   const periodRef = getPeriodDocRef(year, month)
   const periodSnapshot = await getDoc(periodRef)
@@ -313,7 +312,6 @@ export async function searchRepresentativesInCloud({
   take = 25,
 }: RepresentativeCloudSearchParams): Promise<RepresentativeSuccessRecord[]> {
   if (!isCloudPersistenceEnabled()) return []
-  requireAdminFirebaseUser()
 
   const repsRef = getRepresentativesRef(year, month)
   const normalizedSearch = search ? normalizeName(search) : ''

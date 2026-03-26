@@ -12,7 +12,7 @@ service firebase.storage {
     }
 
     match /representative-images/{representativeId}/{fileName} {
-      allow read: if isAdmin();
+      allow read: if true;
       allow create, update: if isAdmin()
         && request.resource != null
         && request.resource.size < 5 * 1024 * 1024

@@ -29,10 +29,6 @@ export function AdminAuthProvider({ children }: { children: ReactNode }) {
     const unsubscribe = observeFirebaseAuthState((nextUser) => {
       setUser(nextUser)
       setIsLoading(false)
-
-      if (!nextUser || !isFirebaseAdminEmail(nextUser.email)) {
-        useDashboardDataStore.getState().resetAll()
-      }
     })
 
     return unsubscribe
