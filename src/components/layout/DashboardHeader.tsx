@@ -5,12 +5,13 @@ import { Button } from '@/components/ui/button'
 import { FilterBar } from '@/components/filters/FilterBar'
 
 interface DashboardHeaderProps {
+  isAdmin: boolean
   onPresentationMode: (mode: 'slideshow' | 'narrator') => void
   userEmail?: string
   onSignOut?: () => void
 }
 
-export function DashboardHeader({ onPresentationMode, userEmail, onSignOut }: DashboardHeaderProps) {
+export function DashboardHeader({ isAdmin, onPresentationMode, userEmail, onSignOut }: DashboardHeaderProps) {
   return (
     <header className="mb-7 space-y-4">
       <div className="fade-up rounded-2xl border border-white/80 bg-white/70 p-4 shadow-[0_14px_38px_-30px_rgba(23,48,57,0.7)] backdrop-blur-sm sm:p-5">
@@ -26,6 +27,11 @@ export function DashboardHeader({ onPresentationMode, userEmail, onSignOut }: Da
           </div>
 
           <div className="flex flex-wrap items-center gap-2">
+            {!isAdmin && (
+              <Badge variant="secondary" className="px-3 py-1 text-[11px] tracking-[0.14em] uppercase">
+                Görüntüleme modu
+              </Badge>
+            )}
             {userEmail && (
               <Badge variant="outline" className="max-w-full truncate px-3 py-1 text-[11px] tracking-[0.14em] uppercase">
                 {userEmail}
@@ -34,7 +40,7 @@ export function DashboardHeader({ onPresentationMode, userEmail, onSignOut }: Da
             <Link to="/admin">
               <Button variant="outline" size="sm">
                 <Settings className="mr-2 h-4 w-4" />
-                Admin
+                {isAdmin ? 'Admin paneli' : 'Yönetici girişi'}
               </Button>
             </Link>
             {onSignOut && (

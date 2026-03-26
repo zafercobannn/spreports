@@ -4,7 +4,6 @@ import { DashboardHeader } from '@/components/layout/DashboardHeader'
 import { TabNavigation } from '@/components/layout/TabNavigation'
 import { Tabs, TabsContent } from '@/components/ui/tabs'
 import { useAdminAuth } from '@/features/auth/AdminAuthProvider'
-import { DashboardLockScreen } from '@/features/auth/DashboardLockScreen'
 import { MonthlyOverviewTab } from '@/features/monthly-overview/MonthlyOverviewTab'
 import { MonthlyComparisonTab } from '@/features/monthly-comparison/MonthlyComparisonTab'
 import { CohortTab } from '@/features/cohort/CohortTab'
@@ -19,16 +18,21 @@ import type { DashboardTab } from '@/types/filters'
 function DashboardWorkspace() {
   const [activeTab, setActiveTab] = useState<DashboardTab>('monthly')
   const enterPresentation = usePresentationStore((s) => s.enterPresentation)
-  const { signOut, userEmail } = useAdminAuth()
+  const { isAdmin, signOut, userEmail } = useAdminAuth()
 
   return (
     <DashboardLayout>
       <DashboardHeader
+        isAdmin={isAdmin}
         onPresentationMode={enterPresentation}
-        userEmail={userEmail}
-        onSignOut={() => {
-          void signOut()
-        }}
+        userEmail={isAdmin ? userEmail : ''}
+        onSignOut={
+          isAdmin
+            ? () => {
+                void signOut()
+              }
+            : undefined
+        }
       />
 
       <Tabs className="fade-up fade-up-delay-2">
@@ -77,11 +81,5 @@ function DashboardWorkspace() {
 }
 
 export function DashboardPage() {
-  const { isAdmin } = useAdminAuth()
-
-  if (!isAdmin) {
-    return <DashboardLockScreen />
-  }
-
   return <DashboardWorkspace />
 }
