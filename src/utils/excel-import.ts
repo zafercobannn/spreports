@@ -110,7 +110,7 @@ function hasAnyHeader(rows: RowRecord[], keys: string[]): boolean {
   return keys.some((key) => normalizedHeaders.includes(key))
 }
 
-function parseParsUsage(value: unknown): boolean {
+function parseUsageStatus(value: unknown): boolean {
   if (typeof value === 'boolean') return value
   if (typeof value === 'number') return value > 0
 
@@ -235,6 +235,8 @@ export function parseTopFirmsExcelRows(rows: RowRecord[]): TopFirm[] {
     hasAnyHeader(rows, ['pars', 'parsdurum', 'parsstatus']),
   ]
 
+  const hasPwiHeader = hasAnyHeader(rows, ['pwi', 'pwidurum', 'pwistatus'])
+
   if (requiredHeaders.some((isExists) => !isExists)) {
     throw new Error(
       'Top 15 import için zorunlu başlıklar: Mağaza, GPV, Önceki Ay GPV, Gönderi, ikas Kargo Paket Adedi, PARS.',
@@ -263,7 +265,10 @@ export function parseTopFirmsExcelRows(rows: RowRecord[]): TopFirm[] {
           toNumber(getCell(row, ['ikaskargodegeri', 'ikaskargopaketadedi', 'ikascargovalue', 'ikaskargo'])),
         ),
       )
-      const usesPars = parseParsUsage(getCell(row, ['pars', 'parsdurum', 'parsstatus']))
+      const usesPars = parseUsageStatus(getCell(row, ['pars', 'parsdurum', 'parsstatus']))
+      const usesPwi = hasPwiHeader
+        ? parseUsageStatus(getCell(row, ['pwi', 'pwidurum', 'pwistatus']))
+        : false
 
       if (!name) return null
 
@@ -276,6 +281,7 @@ export function parseTopFirmsExcelRows(rows: RowRecord[]): TopFirm[] {
         shipmentSent,
         ikasCargoValue,
         usesPars,
+        usesPwi,
       }
     })
     .filter((item): item is TopFirm => item !== null)

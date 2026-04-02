@@ -296,7 +296,7 @@ function TopFirmsEditor({
 }) {
   return (
     <div className="space-y-3">
-      <div className="hidden grid-cols-[56px_minmax(0,1.4fr)_160px_160px_120px_170px_170px_44px] gap-3 px-2 xl:grid">
+      <div className="hidden grid-cols-[56px_minmax(0,1.2fr)_140px_140px_110px_150px_150px_150px_44px] gap-3 px-2 xl:grid">
         <span className="text-[11px] font-semibold tracking-[0.14em] text-muted-foreground uppercase">#</span>
         <span className="text-[11px] font-semibold tracking-[0.14em] text-muted-foreground uppercase">Mağaza</span>
         <span className="text-[11px] font-semibold tracking-[0.14em] text-muted-foreground uppercase">GPV</span>
@@ -304,6 +304,7 @@ function TopFirmsEditor({
         <span className="text-[11px] font-semibold tracking-[0.14em] text-muted-foreground uppercase">Değişim %</span>
         <span className="text-[11px] font-semibold tracking-[0.14em] text-muted-foreground uppercase">ikas Kargo</span>
         <span className="text-[11px] font-semibold tracking-[0.14em] text-muted-foreground uppercase">PARS</span>
+        <span className="text-[11px] font-semibold tracking-[0.14em] text-muted-foreground uppercase">PWI</span>
         <span />
       </div>
 
@@ -313,7 +314,7 @@ function TopFirmsEditor({
         return (
           <div
             key={index}
-            className="grid grid-cols-1 gap-2 rounded-lg border border-black/6 bg-white/50 p-3 xl:grid-cols-[56px_minmax(0,1.4fr)_160px_160px_120px_170px_170px_44px]"
+            className="grid grid-cols-1 gap-2 rounded-lg border border-black/6 bg-white/50 p-3 xl:grid-cols-[56px_minmax(0,1.2fr)_140px_140px_110px_150px_150px_150px_44px]"
           >
             <div className="space-y-1">
               <span className="text-[11px] font-semibold tracking-[0.14em] text-muted-foreground uppercase xl:hidden">Sıra</span>
@@ -390,6 +391,22 @@ function TopFirmsEditor({
                 onChange={(event) =>
                   onChange(data.map((item, itemIndex) => (
                     itemIndex === index ? { ...item, usesPars: event.target.value === 'uses' } : item
+                  )))
+                }
+              >
+                <option value="uses">Kullanıyor</option>
+                <option value="not-uses">Kullanmıyor</option>
+              </select>
+            </label>
+
+            <label className="space-y-1">
+              <span className="text-[11px] font-semibold tracking-[0.14em] text-muted-foreground uppercase xl:hidden">PWI</span>
+              <select
+                className={smallInputClassName}
+                value={firm.usesPwi ? 'uses' : 'not-uses'}
+                onChange={(event) =>
+                  onChange(data.map((item, itemIndex) => (
+                    itemIndex === index ? { ...item, usesPwi: event.target.value === 'uses' } : item
                   )))
                 }
               >
@@ -1050,6 +1067,7 @@ function AdminWorkspace() {
                           shipmentSent: 0,
                           ikasCargoValue: 0,
                           usesPars: false,
+                          usesPwi: false,
                         },
                       ],
                     }))
@@ -1075,7 +1093,7 @@ function AdminWorkspace() {
                   }
                 />
                 <p className="text-xs text-muted-foreground">
-                  CSV / Excel zorunlu alanları: `Mağaza`, `GPV`, `Önceki Ay GPV`, `Gönderi`, `ikas Kargo Paket Adedi`, `PARS`.
+                  CSV / Excel zorunlu alanları: `Mağaza`, `GPV`, `Önceki Ay GPV`, `Gönderi`, `ikas Kargo Paket Adedi`, `PARS`. İsteğe bağlı: `PWI`.
                 </p>
               </div>
             </AdminSectionCard>

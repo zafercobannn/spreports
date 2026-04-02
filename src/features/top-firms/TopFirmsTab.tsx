@@ -1,6 +1,7 @@
 import { TopFirmsTable } from './TopFirmsTable'
 import { ShippingUsageChart } from './ShippingUsageChart'
 import { ParsUsageChart } from './ParsUsageChart'
+import { PwiUsageChart } from './PwiUsageChart'
 import { KPICard } from '@/components/data-display/KPICard'
 import { KPICardGrid } from '@/components/data-display/KPICardGrid'
 import { PageSection } from '@/components/layout/PageSection'
@@ -20,11 +21,14 @@ export function TopFirmsTab() {
   const parsUsers = data.filter((f) => f.usesPars).length
   const parsNonUsers = Math.max(0, data.length - parsUsers)
   const parsUsageRate = ratio(parsUsers, data.length)
+  const pwiUsers = data.filter((f) => f.usesPwi).length
+  const pwiNonUsers = Math.max(0, data.length - pwiUsers)
+  const pwiUsageRate = ratio(pwiUsers, data.length)
 
   return (
     <div className="space-y-6">
       <PageSection title="Top 15 Özet">
-        <KPICardGrid columns={3}>
+        <KPICardGrid columns={4}>
           <KPICard label="Toplam Ciro" value={formatCurrency(totalRevenue)} />
           <KPICard
             label="ikas Kargo Kullanan"
@@ -36,6 +40,11 @@ export function TopFirmsTab() {
             value={formatPercent(parsUsageRate)}
             subtitle={`Kullanan: ${formatNumber(parsUsers)} firma | Kullanmayan: ${formatNumber(parsNonUsers)} firma`}
           />
+          <KPICard
+            label="PWI Kullanan"
+            value={formatPercent(pwiUsageRate)}
+            subtitle={`Kullanan: ${formatNumber(pwiUsers)} firma | Kullanmayan: ${formatNumber(pwiNonUsers)} firma`}
+          />
         </KPICardGrid>
       </PageSection>
 
@@ -46,8 +55,9 @@ export function TopFirmsTab() {
           </PageSection>
         </div>
         <div className="space-y-4">
-          <ShippingUsageChart data={data} />
+          <PwiUsageChart data={data} />
           <ParsUsageChart data={data} />
+          <ShippingUsageChart data={data} />
         </div>
       </div>
     </div>

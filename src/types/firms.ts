@@ -7,6 +7,7 @@ export interface TopFirm {
   shipmentSent: number
   ikasCargoValue: number
   usesPars: boolean
+  usesPwi: boolean
   // Legacy alan: eski verilerde yüzde saklanmış olabilir.
   parsUsageRate?: number
 }

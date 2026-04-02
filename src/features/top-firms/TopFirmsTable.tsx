@@ -1,5 +1,6 @@
 import { DataTable, type Column } from '@/components/data-display/DataTable'
 import { TrendIndicator } from '@/components/data-display/TrendIndicator'
+import { Badge } from '@/components/ui/badge'
 import { formatCurrency } from '@/utils/format'
 import { getTrendDirection } from '@/utils/calculations'
 import type { TopFirm } from '@/types/firms'
@@ -9,6 +10,12 @@ interface TopFirmsTableProps {
 }
 
 export function TopFirmsTable({ data }: TopFirmsTableProps) {
+  const renderUsageBadge = (isUsing: boolean) => (
+    <Badge variant={isUsing ? 'success' : 'destructive'}>
+      {isUsing ? 'Kullanıyor' : 'Kullanmıyor'}
+    </Badge>
+  )
+
   const columns: Column<TopFirm>[] = [
     {
       key: 'rank',
@@ -52,6 +59,12 @@ export function TopFirmsTable({ data }: TopFirmsTableProps) {
           size="md"
         />
       ),
+    },
+    {
+      key: 'usesPwi',
+      header: 'PWI',
+      align: 'center',
+      render: (row) => renderUsageBadge(row.usesPwi),
     },
   ]
 

@@ -120,6 +120,7 @@ function normalizeTopFirm(firm: unknown, rank: number, seedFirm?: TopFirm): TopF
     shipmentSent: 0,
     ikasCargoValue: 0,
     usesPars: false,
+    usesPwi: false,
     parsUsageRate: 0,
   }
 
@@ -152,6 +153,10 @@ function normalizeTopFirm(firm: unknown, rank: number, seedFirm?: TopFirm): TopF
     if (Number.isFinite(legacyRate)) return legacyRate > 0
     return base.usesPars
   })()
+  const usesPwi = (() => {
+    if (typeof firm.usesPwi === 'boolean') return firm.usesPwi
+    return base.usesPwi
+  })()
   const gpvChange = calculateGpvChangePercent(gpv, previousMonthGPV)
 
   return {
@@ -163,6 +168,7 @@ function normalizeTopFirm(firm: unknown, rank: number, seedFirm?: TopFirm): TopF
     shipmentSent,
     ikasCargoValue,
     usesPars,
+    usesPwi,
     parsUsageRate,
   }
 }
