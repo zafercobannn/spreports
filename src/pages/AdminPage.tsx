@@ -295,139 +295,141 @@ function TopFirmsEditor({
   onChange: (next: TopFirm[]) => void
 }) {
   return (
-    <div className="space-y-3">
-      <div className="hidden grid-cols-[56px_minmax(0,1.2fr)_140px_140px_110px_150px_150px_150px_44px] gap-3 px-2 xl:grid">
-        <span className="text-[11px] font-semibold tracking-[0.14em] text-muted-foreground uppercase">#</span>
-        <span className="text-[11px] font-semibold tracking-[0.14em] text-muted-foreground uppercase">Mağaza</span>
-        <span className="text-[11px] font-semibold tracking-[0.14em] text-muted-foreground uppercase">GPV</span>
-        <span className="text-[11px] font-semibold tracking-[0.14em] text-muted-foreground uppercase">Önceki GPV</span>
-        <span className="text-[11px] font-semibold tracking-[0.14em] text-muted-foreground uppercase">Değişim %</span>
-        <span className="text-[11px] font-semibold tracking-[0.14em] text-muted-foreground uppercase">ikas Kargo</span>
-        <span className="text-[11px] font-semibold tracking-[0.14em] text-muted-foreground uppercase">PARS</span>
-        <span className="text-[11px] font-semibold tracking-[0.14em] text-muted-foreground uppercase">PWI</span>
-        <span />
+    <div className="space-y-3 xl:overflow-x-auto xl:pb-1">
+      <div className="space-y-3 xl:min-w-[1260px]">
+        <div className="hidden grid-cols-[56px_minmax(220px,1.2fr)_140px_140px_110px_150px_150px_150px_44px] gap-3 px-2 xl:grid">
+          <span className="text-[11px] font-semibold tracking-[0.14em] text-muted-foreground uppercase">#</span>
+          <span className="text-[11px] font-semibold tracking-[0.14em] text-muted-foreground uppercase">Mağaza</span>
+          <span className="text-[11px] font-semibold tracking-[0.14em] text-muted-foreground uppercase">GPV</span>
+          <span className="text-[11px] font-semibold tracking-[0.14em] text-muted-foreground uppercase">Önceki GPV</span>
+          <span className="text-[11px] font-semibold tracking-[0.14em] text-muted-foreground uppercase">Değişim %</span>
+          <span className="text-[11px] font-semibold tracking-[0.14em] text-muted-foreground uppercase">ikas Kargo</span>
+          <span className="text-[11px] font-semibold tracking-[0.14em] text-muted-foreground uppercase">PARS</span>
+          <span className="text-[11px] font-semibold tracking-[0.14em] text-muted-foreground uppercase">PWI</span>
+          <span />
+        </div>
+
+        {data.map((firm, index) => {
+          const gpvChange = calculateGpvChangePercent(firm.gpv, firm.previousMonthGPV)
+
+          return (
+            <div
+              key={index}
+              className="grid grid-cols-1 gap-2 rounded-lg border border-black/6 bg-white/50 p-3 xl:grid-cols-[56px_minmax(220px,1.2fr)_140px_140px_110px_150px_150px_150px_44px]"
+            >
+              <div className="space-y-1">
+                <span className="text-[11px] font-semibold tracking-[0.14em] text-muted-foreground uppercase xl:hidden">Sıra</span>
+                <div className="flex h-9 items-center rounded-lg border border-black/8 bg-white/60 px-3 text-sm font-semibold text-foreground">
+                  {index + 1}
+                </div>
+              </div>
+
+              <label className="space-y-1">
+                <span className="text-[11px] font-semibold tracking-[0.14em] text-muted-foreground uppercase xl:hidden">Mağaza</span>
+                <input
+                  className={smallInputClassName}
+                  value={firm.name}
+                  onChange={(event) =>
+                    onChange(data.map((item, itemIndex) => (
+                      itemIndex === index ? { ...item, name: event.target.value } : item
+                    )))
+                  }
+                  placeholder="Mağaza"
+                />
+              </label>
+
+              <label className="space-y-1">
+                <span className="text-[11px] font-semibold tracking-[0.14em] text-muted-foreground uppercase xl:hidden">GPV</span>
+                <NumberInput
+                  className={smallInputClassName}
+                  value={firm.gpv}
+                  onValueChange={(value) =>
+                    onChange(data.map((item, itemIndex) => (
+                      itemIndex === index ? { ...item, gpv: value } : item
+                    )))
+                  }
+                />
+              </label>
+
+              <label className="space-y-1">
+                <span className="text-[11px] font-semibold tracking-[0.14em] text-muted-foreground uppercase xl:hidden">Önceki GPV</span>
+                <NumberInput
+                  className={smallInputClassName}
+                  value={firm.previousMonthGPV}
+                  onValueChange={(value) =>
+                    onChange(data.map((item, itemIndex) => (
+                      itemIndex === index ? { ...item, previousMonthGPV: value } : item
+                    )))
+                  }
+                />
+              </label>
+
+              <div className="space-y-1">
+                <span className="text-[11px] font-semibold tracking-[0.14em] text-muted-foreground uppercase xl:hidden">Değişim %</span>
+                <div className="flex h-9 items-center rounded-lg border border-black/8 bg-white/60 px-3 text-sm font-semibold text-foreground">
+                  {gpvChange.toFixed(1)}%
+                </div>
+              </div>
+
+              <label className="space-y-1">
+                <span className="text-[11px] font-semibold tracking-[0.14em] text-muted-foreground uppercase xl:hidden">ikas Kargo</span>
+                <NumberInput
+                  className={smallInputClassName}
+                  value={firm.ikasCargoValue}
+                  onValueChange={(value) =>
+                    onChange(data.map((item, itemIndex) => (
+                      itemIndex === index ? { ...item, ikasCargoValue: Math.max(0, value) } : item
+                    )))
+                  }
+                />
+              </label>
+
+              <label className="space-y-1">
+                <span className="text-[11px] font-semibold tracking-[0.14em] text-muted-foreground uppercase xl:hidden">PARS</span>
+                <select
+                  className={smallInputClassName}
+                  value={firm.usesPars ? 'uses' : 'not-uses'}
+                  onChange={(event) =>
+                    onChange(data.map((item, itemIndex) => (
+                      itemIndex === index ? { ...item, usesPars: event.target.value === 'uses' } : item
+                    )))
+                  }
+                >
+                  <option value="uses">Kullanıyor</option>
+                  <option value="not-uses">Kullanmıyor</option>
+                </select>
+              </label>
+
+              <label className="space-y-1">
+                <span className="text-[11px] font-semibold tracking-[0.14em] text-muted-foreground uppercase xl:hidden">PWI</span>
+                <select
+                  className={smallInputClassName}
+                  value={firm.usesPwi ? 'uses' : 'not-uses'}
+                  onChange={(event) =>
+                    onChange(data.map((item, itemIndex) => (
+                      itemIndex === index ? { ...item, usesPwi: event.target.value === 'uses' } : item
+                    )))
+                  }
+                >
+                  <option value="uses">Kullanıyor</option>
+                  <option value="not-uses">Kullanmıyor</option>
+                </select>
+              </label>
+
+              <div className="flex items-end">
+                <Button
+                  variant="outline"
+                  size="icon"
+                  className="h-8 w-8 rounded-lg border-black/10 bg-white/70"
+                  onClick={() => onChange(data.filter((_, itemIndex) => itemIndex !== index))}
+                >
+                  <Trash2 className="h-4 w-4" />
+                </Button>
+              </div>
+            </div>
+          )
+        })}
       </div>
-
-      {data.map((firm, index) => {
-        const gpvChange = calculateGpvChangePercent(firm.gpv, firm.previousMonthGPV)
-
-        return (
-          <div
-            key={index}
-            className="grid grid-cols-1 gap-2 rounded-lg border border-black/6 bg-white/50 p-3 xl:grid-cols-[56px_minmax(0,1.2fr)_140px_140px_110px_150px_150px_150px_44px]"
-          >
-            <div className="space-y-1">
-              <span className="text-[11px] font-semibold tracking-[0.14em] text-muted-foreground uppercase xl:hidden">Sıra</span>
-              <div className="flex h-9 items-center rounded-lg border border-black/8 bg-white/60 px-3 text-sm font-semibold text-foreground">
-                {index + 1}
-              </div>
-            </div>
-
-            <label className="space-y-1">
-              <span className="text-[11px] font-semibold tracking-[0.14em] text-muted-foreground uppercase xl:hidden">Mağaza</span>
-              <input
-                className={smallInputClassName}
-                value={firm.name}
-                onChange={(event) =>
-                  onChange(data.map((item, itemIndex) => (
-                    itemIndex === index ? { ...item, name: event.target.value } : item
-                  )))
-                }
-                placeholder="Mağaza"
-              />
-            </label>
-
-            <label className="space-y-1">
-              <span className="text-[11px] font-semibold tracking-[0.14em] text-muted-foreground uppercase xl:hidden">GPV</span>
-              <NumberInput
-                className={smallInputClassName}
-                value={firm.gpv}
-                onValueChange={(value) =>
-                  onChange(data.map((item, itemIndex) => (
-                    itemIndex === index ? { ...item, gpv: value } : item
-                  )))
-                }
-              />
-            </label>
-
-            <label className="space-y-1">
-              <span className="text-[11px] font-semibold tracking-[0.14em] text-muted-foreground uppercase xl:hidden">Önceki GPV</span>
-              <NumberInput
-                className={smallInputClassName}
-                value={firm.previousMonthGPV}
-                onValueChange={(value) =>
-                  onChange(data.map((item, itemIndex) => (
-                    itemIndex === index ? { ...item, previousMonthGPV: value } : item
-                  )))
-                }
-              />
-            </label>
-
-            <div className="space-y-1">
-              <span className="text-[11px] font-semibold tracking-[0.14em] text-muted-foreground uppercase xl:hidden">Değişim %</span>
-              <div className="flex h-9 items-center rounded-lg border border-black/8 bg-white/60 px-3 text-sm font-semibold text-foreground">
-                {gpvChange.toFixed(1)}%
-              </div>
-            </div>
-
-            <label className="space-y-1">
-              <span className="text-[11px] font-semibold tracking-[0.14em] text-muted-foreground uppercase xl:hidden">ikas Kargo</span>
-              <NumberInput
-                className={smallInputClassName}
-                value={firm.ikasCargoValue}
-                onValueChange={(value) =>
-                  onChange(data.map((item, itemIndex) => (
-                    itemIndex === index ? { ...item, ikasCargoValue: Math.max(0, value) } : item
-                  )))
-                }
-              />
-            </label>
-
-            <label className="space-y-1">
-              <span className="text-[11px] font-semibold tracking-[0.14em] text-muted-foreground uppercase xl:hidden">PARS</span>
-              <select
-                className={smallInputClassName}
-                value={firm.usesPars ? 'uses' : 'not-uses'}
-                onChange={(event) =>
-                  onChange(data.map((item, itemIndex) => (
-                    itemIndex === index ? { ...item, usesPars: event.target.value === 'uses' } : item
-                  )))
-                }
-              >
-                <option value="uses">Kullanıyor</option>
-                <option value="not-uses">Kullanmıyor</option>
-              </select>
-            </label>
-
-            <label className="space-y-1">
-              <span className="text-[11px] font-semibold tracking-[0.14em] text-muted-foreground uppercase xl:hidden">PWI</span>
-              <select
-                className={smallInputClassName}
-                value={firm.usesPwi ? 'uses' : 'not-uses'}
-                onChange={(event) =>
-                  onChange(data.map((item, itemIndex) => (
-                    itemIndex === index ? { ...item, usesPwi: event.target.value === 'uses' } : item
-                  )))
-                }
-              >
-                <option value="uses">Kullanıyor</option>
-                <option value="not-uses">Kullanmıyor</option>
-              </select>
-            </label>
-
-            <div className="flex items-end">
-              <Button
-                variant="outline"
-                size="icon"
-                className="h-8 w-8 rounded-lg border-black/10 bg-white/70"
-                onClick={() => onChange(data.filter((_, itemIndex) => itemIndex !== index))}
-              >
-                <Trash2 className="h-4 w-4" />
-              </Button>
-            </div>
-          </div>
-        )
-      })}
     </div>
   )
 }
