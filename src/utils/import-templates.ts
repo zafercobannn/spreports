@@ -1,3 +1,5 @@
+import { isRepresentativeCsatPeriod } from '@/features/team-performance/representative-success-utils'
+
 type CsvCell = string | number | boolean
 
 interface CsvTemplateDefinition {
@@ -54,7 +56,9 @@ export function downloadTopFirmsTemplate(): void {
   })
 }
 
-export function downloadRepresentativeTemplate(): void {
+export function downloadRepresentativeTemplate(options?: { year: number; month: number }): void {
+  const usesCsatModel = options ? isRepresentativeCsatPeriod(options.year, options.month) : false
+
   downloadCsvTemplate({
     filename: 'temsilci-basari-import-sablonu.csv',
     headers: [
@@ -62,11 +66,13 @@ export function downloadRepresentativeTemplate(): void {
       'Canlıya Alınan Hesap Sayısı',
       'Canlıya Alınan Hesap Sayısı Hedefi',
       'Audit Puanı',
-      'NPS Anket Skoru',
+      usesCsatModel ? 'CSAT' : 'NPS Anket Skoru',
       'Ortalama Canlıya Alma Süresi (gün)',
-      'Toplantı Değerlendirmesi',
+      ...(usesCsatModel ? [] : ['Toplantı Değerlendirmesi']),
       'Görsel URL',
     ],
-    sampleRow: ['Örnek Temsilci', 18, 20, 92, 4.7, 5.2, 4.5, 'https://example.com/gorsel.jpg'],
+    sampleRow: usesCsatModel
+      ? ['Örnek Temsilci', 18, 20, 92, 4.7, 5.2, 'https://example.com/gorsel.jpg']
+      : ['Örnek Temsilci', 18, 20, 92, 4.7, 5.2, 4.5, 'https://example.com/gorsel.jpg'],
   })
 }

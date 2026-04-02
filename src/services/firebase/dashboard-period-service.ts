@@ -38,6 +38,7 @@ interface EncryptedRepresentativePayload {
   liveTarget: number
   auditScore: number
   npsScore: number
+  csatScore: number
   avgGoLiveDurationDays: number
   meetingScore: number
   imageUrl?: string
@@ -119,6 +120,7 @@ function parseRepresentativeFallback(data: Record<string, unknown>): Representat
     liveTarget: Number(data.liveTarget ?? 0),
     auditScore: Number(data.auditScore ?? 0),
     npsScore: Number(data.npsScore ?? 0),
+    csatScore: Number(data.csatScore ?? data.npsScore ?? 0),
     avgGoLiveDurationDays: Number(data.avgGoLiveDurationDays ?? 0),
     meetingScore: Number(data.meetingScore ?? 0),
     imageUrl: typeof data.imageUrl === 'string' ? data.imageUrl : '',
@@ -211,7 +213,7 @@ export async function saveDashboardPeriodToCloud(
     const repRef = doc(repsRef, rep.id)
     existingIds.delete(rep.id)
 
-    const metrics = calculateRepresentativeMetrics(rep, data.representativeWeights)
+    const metrics = calculateRepresentativeMetrics(rep, data.representativeWeights, year, month)
     const repPayload = stripUndefinedDeep<RepresentativeSuccessRecord>({
       id: rep.id,
       name: rep.name,
@@ -219,6 +221,7 @@ export async function saveDashboardPeriodToCloud(
       liveTarget: rep.liveTarget,
       auditScore: rep.auditScore,
       npsScore: rep.npsScore,
+      csatScore: rep.csatScore,
       avgGoLiveDurationDays: rep.avgGoLiveDurationDays,
       meetingScore: rep.meetingScore,
       imageUrl: rep.imageUrl ?? '',

@@ -17,6 +17,7 @@ export function TeamPerformanceTab() {
           <RepresentativeSuccessBoard
             data={periodData.representativeSuccess}
             weights={periodData.representativeWeights}
+            month={month}
             monthLabel={getMonthName(month)}
             year={year}
           />

@@ -727,7 +727,7 @@ function AdminWorkspace() {
 
     try {
       const text = await file.text()
-      const parsed = parseRepresentativeCsv(text)
+      const parsed = parseRepresentativeCsv(text, { year: editYear, month: editMonth })
       patchPeriod((data) => ({
         ...data,
         representativeSuccess: parsed,
@@ -795,7 +795,7 @@ function AdminWorkspace() {
       id: 'representatives',
       label: 'Temsilci CSV',
       accept: '.csv,text/csv',
-      onTemplateDownload: downloadRepresentativeTemplate,
+      onTemplateDownload: () => downloadRepresentativeTemplate({ year: editYear, month: editMonth }),
       onFileSelect: (file: File | null) => {
         void handleRepresentativeImport(file)
       },
@@ -1176,6 +1176,7 @@ function AdminWorkspace() {
               <RepresentativeSuccessAdmin
                 data={periodData.representativeSuccess}
                 weights={periodData.representativeWeights}
+                month={editMonth}
                 monthLabel={getMonthName(editMonth)}
                 year={editYear}
                 onDataChange={(nextData) =>

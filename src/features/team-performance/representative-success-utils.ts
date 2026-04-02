@@ -1,14 +1,20 @@
 import type { RepresentativeSuccessRecord, RepresentativeSuccessWeights } from '@/types/team'
 
+export const CSAT_EFFECTIVE_YEAR = 2026
+export const CSAT_EFFECTIVE_MONTH = 4
+
 export interface RepresentativeDerivedMetrics {
+  mode: 'legacy' | 'csat'
   livePercent: number
   auditPercent: number
   npsPercent: number
   meetingPercent: number
+  csatPercent: number
   weightedLive: number
   weightedAudit: number
   weightedNps: number
   weightedMeeting: number
+  weightedCsat: number
   successIndex: number
 }
 
@@ -35,30 +41,64 @@ function scorePercent(value: number, max: number): number {
   return Math.max(0, (value / max) * 100)
 }
 
+export function isRepresentativeCsatPeriod(year: number, month: number): boolean {
+  return year > CSAT_EFFECTIVE_YEAR || (year === CSAT_EFFECTIVE_YEAR && month >= CSAT_EFFECTIVE_MONTH)
+}
+
+export function getDefaultRepresentativeWeights(year: number, month: number): RepresentativeSuccessWeights {
+  if (isRepresentativeCsatPeriod(year, month)) {
+    return {
+      liveCount: 30,
+      auditScore: 30,
+      npsScore: 0,
+      meetingScore: 0,
+      csatScore: 40,
+    }
+  }
+
+  return {
+    liveCount: 30,
+    auditScore: 30,
+    npsScore: 20,
+    meetingScore: 20,
+    csatScore: 0,
+  }
+}
+
 export function calculateRepresentativeMetrics(
   record: RepresentativeSuccessRecord,
   weights: RepresentativeSuccessWeights,
+  year: number,
+  month: number,
 ): RepresentativeDerivedMetrics {
+  const usesCsatModel = isRepresentativeCsatPeriod(year, month)
   const livePercent = record.liveTarget > 0 ? (record.liveCount / record.liveTarget) * 100 : 0
   const auditPercent = Math.max(0, Math.min(100, record.auditScore))
   const npsPercent = scorePercent(record.npsScore, 5)
   const meetingPercent = scorePercent(record.meetingScore, 5)
+  const csatPercent = scorePercent(record.csatScore, 5)
 
   const weightedLive = livePercent * (weights.liveCount / 100)
   const weightedAudit = auditPercent * (weights.auditScore / 100)
   const weightedNps = npsPercent * (weights.npsScore / 100)
   const weightedMeeting = meetingPercent * (weights.meetingScore / 100)
+  const weightedCsat = csatPercent * (weights.csatScore / 100)
 
   return {
+    mode: usesCsatModel ? 'csat' : 'legacy',
     livePercent,
     auditPercent,
     npsPercent,
     meetingPercent,
+    csatPercent,
     weightedLive,
     weightedAudit,
     weightedNps,
     weightedMeeting,
-    successIndex: weightedLive + weightedAudit + weightedNps + weightedMeeting,
+    weightedCsat,
+    successIndex: usesCsatModel
+      ? weightedLive + weightedAudit + weightedCsat
+      : weightedLive + weightedAudit + weightedNps + weightedMeeting,
   }
 }
 
@@ -111,7 +151,10 @@ function buildRecordId(name: string, index: number): string {
   return `${slug || 'rep'}-${index + 1}`
 }
 
-export function parseRepresentativeCsv(csvText: string): RepresentativeSuccessRecord[] {
+export function parseRepresentativeCsv(
+  csvText: string,
+  options?: { year: number; month: number },
+): RepresentativeSuccessRecord[] {
   const lines = csvText
     .replace(/\r/g, '')
     .split('\n')
@@ -125,12 +168,14 @@ export function parseRepresentativeCsv(csvText: string): RepresentativeSuccessRe
   const headerLine = lines[0].replace(/^\uFEFF/, '')
   const delimiter = detectDelimiter(headerLine)
   const headers = parseCsvLine(headerLine, delimiter)
+  const usesCsatModel = options ? isRepresentativeCsatPeriod(options.year, options.month) : false
 
   const nameIdx = resolveHeaderIndex(headers, ['temsilci', 'temsilciadi', 'mtadi'])
   const liveIdx = resolveHeaderIndex(headers, ['canliyaalinanhesapsayisi', 'canliyaalinanfirmaadedi'])
   const liveTargetIdx = resolveHeaderIndex(headers, ['canliyaalinanhesapsayisihedefi', 'canliyaalinanfirmaadedihedefi'])
   const auditIdx = resolveHeaderIndex(headers, ['auditpuani', 'auditskoru'])
   const npsIdx = resolveHeaderIndex(headers, ['npsanketskoru', 'onboardinganketskoru', 'npsscore'])
+  const csatIdx = resolveHeaderIndex(headers, ['csat', 'csatskoru', 'csatanketskoru', 'musterimemnuniyetiskoru', 'npsanketskoru', 'onboardinganketskoru', 'npsscore'])
   const avgGoLiveDurationIdx = resolveHeaderIndex(headers, [
     'ortalamacanliyaalmasuresi',
     'ortalamacanliyaalmasuresigun',
@@ -140,7 +185,11 @@ export function parseRepresentativeCsv(csvText: string): RepresentativeSuccessRe
   const meetingIdx = resolveHeaderIndex(headers, ['toplantidegerlendirmesi'])
   const imageIdx = resolveHeaderIndex(headers, ['gorsel', 'gorselurl', 'image', 'imageurl', 'foto', 'fotourl'])
 
-  if ([nameIdx, liveIdx, liveTargetIdx, auditIdx, npsIdx, meetingIdx].some((idx) => idx === -1)) {
+  if (usesCsatModel) {
+    if ([nameIdx, liveIdx, liveTargetIdx, auditIdx, csatIdx].some((idx) => idx === -1)) {
+      throw new Error('CSV başlıkları eksik. Gerekli alanlar: Temsilci, Canlıya Alınan Hesap Sayısı, Hedef, Audit, CSAT.')
+    }
+  } else if ([nameIdx, liveIdx, liveTargetIdx, auditIdx, npsIdx, meetingIdx].some((idx) => idx === -1)) {
     throw new Error('CSV başlıkları eksik. Gerekli alanlar: Temsilci, Canlıya Alınan Hesap Sayısı, Hedef, Audit, NPS, Toplantı.')
   }
 
@@ -153,9 +202,10 @@ export function parseRepresentativeCsv(csvText: string): RepresentativeSuccessRe
       liveCount: Math.max(0, toNumber(cells[liveIdx] ?? '0')),
       liveTarget: Math.max(0, toNumber(cells[liveTargetIdx] ?? '0')),
       auditScore: Math.max(0, Math.min(100, toNumber(cells[auditIdx] ?? '0'))),
-      npsScore: Math.max(0, Math.min(5, toNumber(cells[npsIdx] ?? '0'))),
+      npsScore: usesCsatModel ? 0 : Math.max(0, Math.min(5, toNumber(cells[npsIdx] ?? '0'))),
+      csatScore: usesCsatModel ? Math.max(0, Math.min(5, toNumber(cells[csatIdx] ?? '0'))) : 0,
       avgGoLiveDurationDays: Math.max(0, toNumber(avgGoLiveDurationIdx >= 0 ? (cells[avgGoLiveDurationIdx] ?? '0') : '0')),
-      meetingScore: Math.max(0, Math.min(5, toNumber(cells[meetingIdx] ?? '0'))),
+      meetingScore: usesCsatModel ? 0 : Math.max(0, Math.min(5, toNumber(cells[meetingIdx] ?? '0'))),
       imageUrl: imageIdx >= 0 ? (cells[imageIdx] ?? '') : '',
     }
   }).filter((record) => record.name.trim().length > 0)

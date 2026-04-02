@@ -11,6 +11,7 @@ export interface RepresentativeSuccessRecord {
   liveTarget: number
   auditScore: number
   npsScore: number
+  csatScore: number
   avgGoLiveDurationDays: number
   meetingScore: number
   imageUrl?: string
@@ -21,6 +22,7 @@ export interface RepresentativeSuccessWeights {
   auditScore: number
   npsScore: number
   meetingScore: number
+  csatScore: number
 }
 
 export interface TeamMemberPerformance {

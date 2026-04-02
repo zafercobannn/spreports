@@ -1,10 +1,12 @@
 import { Badge } from '@/components/ui/badge'
 import { NumberInput } from '@/components/ui/number-input'
 import type { RepresentativeSuccessRecord, RepresentativeSuccessWeights } from '@/types/team'
+import { isRepresentativeCsatPeriod } from './representative-success-utils'
 
 interface RepresentativeSuccessAdminProps {
   data: RepresentativeSuccessRecord[]
   weights: RepresentativeSuccessWeights
+  month: number
   monthLabel: string
   year: number
   onDataChange: (next: RepresentativeSuccessRecord[]) => void
@@ -17,12 +19,14 @@ const inputClassName =
 export function RepresentativeSuccessAdmin({
   data,
   weights,
+  month,
   monthLabel,
   year,
   onDataChange,
   onWeightsChange,
 }: RepresentativeSuccessAdminProps) {
-  const totalWeight = weights.liveCount + weights.auditScore + weights.npsScore + weights.meetingScore
+  const usesCsatModel = isRepresentativeCsatPeriod(year, month)
+  const totalWeight = weights.liveCount + weights.auditScore + (usesCsatModel ? weights.csatScore : weights.npsScore + weights.meetingScore)
 
   return (
     <div className="space-y-5">
@@ -37,9 +41,9 @@ export function RepresentativeSuccessAdmin({
             <Badge variant="outline">Canlıya Alınan Hesap Sayısı</Badge>
             <Badge variant="outline">Canlıya Alınan Hesap Sayısı Hedefi</Badge>
             <Badge variant="outline">Audit Puanı</Badge>
-            <Badge variant="outline">NPS Anket Skoru</Badge>
+            <Badge variant="outline">{usesCsatModel ? 'CSAT' : 'NPS Anket Skoru'}</Badge>
             <Badge variant="outline">Ortalama Canlıya Alma Süresi (gün)</Badge>
-            <Badge variant="outline">Toplantı Değerlendirmesi</Badge>
+            {!usesCsatModel && <Badge variant="outline">Toplantı Değerlendirmesi</Badge>}
             <Badge variant="outline">Görsel URL</Badge>
           </div>
         </div>
@@ -49,7 +53,9 @@ export function RepresentativeSuccessAdmin({
             <div>
               <p className="text-[11px] font-semibold tracking-[0.18em] text-muted-foreground uppercase">KPI Ağırlıkları</p>
               <p className="mt-2 text-sm text-muted-foreground">
-                Başarı endeksi dağılımını günlük operasyon ihtiyacına göre düzenle.
+                {usesCsatModel
+                  ? 'Nisan 2026 itibarıyla başarı endeksi Hedef, Audit ve CSAT dağılımıyla hesaplanır.'
+                  : 'Başarı endeksi dağılımını günlük operasyon ihtiyacına göre düzenle.'}
               </p>
             </div>
             <div className="rounded-2xl border border-border/65 bg-background/65 px-4 py-3">
@@ -60,7 +66,7 @@ export function RepresentativeSuccessAdmin({
             </div>
           </div>
 
-          <div className="mt-5 grid grid-cols-1 gap-3 md:grid-cols-2 xl:grid-cols-4">
+          <div className={`mt-5 grid grid-cols-1 gap-3 md:grid-cols-2 ${usesCsatModel ? 'xl:grid-cols-3' : 'xl:grid-cols-4'}`}>
             <label className="space-y-1">
               <span className="text-xs text-muted-foreground">Canlıya Alınan Hesap</span>
               <NumberInput
@@ -78,21 +84,27 @@ export function RepresentativeSuccessAdmin({
               />
             </label>
             <label className="space-y-1">
-              <span className="text-xs text-muted-foreground">NPS</span>
+              <span className="text-xs text-muted-foreground">{usesCsatModel ? 'CSAT' : 'NPS'}</span>
               <NumberInput
                 className={inputClassName}
-                value={weights.npsScore}
-                onValueChange={(value) => onWeightsChange({ ...weights, npsScore: Math.max(0, value) })}
+                value={usesCsatModel ? weights.csatScore : weights.npsScore}
+                onValueChange={(value) => onWeightsChange(
+                  usesCsatModel
+                    ? { ...weights, csatScore: Math.max(0, value), npsScore: 0, meetingScore: 0 }
+                    : { ...weights, npsScore: Math.max(0, value) },
+                )}
               />
             </label>
-            <label className="space-y-1">
-              <span className="text-xs text-muted-foreground">Toplantı</span>
-              <NumberInput
-                className={inputClassName}
-                value={weights.meetingScore}
-                onValueChange={(value) => onWeightsChange({ ...weights, meetingScore: Math.max(0, value) })}
-              />
-            </label>
+            {!usesCsatModel && (
+              <label className="space-y-1">
+                <span className="text-xs text-muted-foreground">Toplantı</span>
+                <NumberInput
+                  className={inputClassName}
+                  value={weights.meetingScore}
+                  onValueChange={(value) => onWeightsChange({ ...weights, meetingScore: Math.max(0, value) })}
+                />
+              </label>
+            )}
           </div>
         </div>
       </div>

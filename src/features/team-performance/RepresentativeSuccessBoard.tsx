@@ -6,11 +6,12 @@ import { getRepresentativePhoto } from '@/constants/representative-photos'
 import { formatNumber } from '@/utils/format'
 import { average, sum } from '@/utils/calculations'
 import type { RepresentativeSuccessRecord, RepresentativeSuccessWeights } from '@/types/team'
-import { calculateRepresentativeMetrics } from './representative-success-utils'
+import { calculateRepresentativeMetrics, isRepresentativeCsatPeriod } from './representative-success-utils'
 
 interface RepresentativeSuccessBoardProps {
   data: RepresentativeSuccessRecord[]
   weights: RepresentativeSuccessWeights
+  month: number
   monthLabel: string
   year: number
 }
@@ -39,17 +40,20 @@ function getScoreLabel(score: number): { label: string; variant: 'success' | 'wa
 export function RepresentativeSuccessBoard({
   data,
   weights,
+  month,
   monthLabel,
   year,
 }: RepresentativeSuccessBoardProps) {
+  const usesCsatModel = isRepresentativeCsatPeriod(year, month)
+
   const rows = useMemo(() => {
     return data
       .map((record) => ({
         record,
-        metrics: calculateRepresentativeMetrics(record, weights),
+        metrics: calculateRepresentativeMetrics(record, weights, year, month),
       }))
       .sort((a, b) => b.metrics.successIndex - a.metrics.successIndex)
-  }, [data, weights])
+  }, [data, month, weights, year])
 
   if (rows.length === 0) {
     return (
@@ -137,7 +141,7 @@ export function RepresentativeSuccessBoard({
         <Card>
           <CardContent className="p-0">
             <div className="overflow-x-auto">
-              <table className="w-full min-w-[900px] text-sm">
+              <table className={`w-full text-sm ${usesCsatModel ? 'min-w-[820px]' : 'min-w-[900px]'}`}>
                 <thead>
                   <tr className="border-b border-border/60 bg-muted/40">
                     <th className="px-3 py-3 text-left text-xs font-semibold uppercase tracking-[0.07em] text-muted-foreground">Sıra</th>
@@ -146,8 +150,14 @@ export function RepresentativeSuccessBoard({
                     <th className="px-3 py-3 text-left text-xs font-semibold uppercase tracking-[0.07em] text-muted-foreground">Canlıya Alınan</th>
                     <th className="px-3 py-3 text-left text-xs font-semibold uppercase tracking-[0.07em] text-muted-foreground">Hedef</th>
                     <th className="px-3 py-3 text-left text-xs font-semibold uppercase tracking-[0.07em] text-muted-foreground">Audit</th>
-                    <th className="px-3 py-3 text-left text-xs font-semibold uppercase tracking-[0.07em] text-muted-foreground">NPS</th>
-                    <th className="px-3 py-3 text-left text-xs font-semibold uppercase tracking-[0.07em] text-muted-foreground">Toplantı</th>
+                    {usesCsatModel ? (
+                      <th className="px-3 py-3 text-left text-xs font-semibold uppercase tracking-[0.07em] text-muted-foreground">CSAT</th>
+                    ) : (
+                      <>
+                        <th className="px-3 py-3 text-left text-xs font-semibold uppercase tracking-[0.07em] text-muted-foreground">NPS</th>
+                        <th className="px-3 py-3 text-left text-xs font-semibold uppercase tracking-[0.07em] text-muted-foreground">Toplantı</th>
+                      </>
+                    )}
                   </tr>
                 </thead>
                 <tbody>
@@ -211,8 +221,14 @@ export function RepresentativeSuccessBoard({
                           </div>
                         </td>
                         <td className="px-3 py-3 font-semibold">{row.record.auditScore.toFixed(1)}/100</td>
-                        <td className="px-3 py-3 font-semibold">{row.record.npsScore.toFixed(2)}/5</td>
-                        <td className="px-3 py-3 font-semibold">{row.record.meetingScore.toFixed(2)}/5</td>
+                        {usesCsatModel ? (
+                          <td className="px-3 py-3 font-semibold">{row.record.csatScore.toFixed(2)}/5</td>
+                        ) : (
+                          <>
+                            <td className="px-3 py-3 font-semibold">{row.record.npsScore.toFixed(2)}/5</td>
+                            <td className="px-3 py-3 font-semibold">{row.record.meetingScore.toFixed(2)}/5</td>
+                          </>
+                        )}
                       </tr>
                     )
                   })}

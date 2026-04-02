@@ -7,6 +7,7 @@ import type { TargetStatus } from '@/types/targets'
 import type { RepresentativeSuccessRecord, RepresentativeSuccessWeights } from '@/types/team'
 import { TURKISH_MONTHS } from '@/utils/date-utils'
 import { calculateGpvChangePercent, calculateParsUsageRatePercent } from '@/utils/top-firm-metrics'
+import { getDefaultRepresentativeWeights, isRepresentativeCsatPeriod } from '@/features/team-performance/representative-success-utils'
 import {
   isCloudPersistenceEnabled,
   loadDashboardPeriodFromCloud,
@@ -23,13 +24,6 @@ const periodEnsureTasks = new Map<string, Promise<void>>()
 const periodLocalVersions = new Map<string, number>()
 const hydratedPeriodKeys = new Set<string>()
 let localToCloudMigrationTask: Promise<void> | null = null
-
-const DEFAULT_REPRESENTATIVE_WEIGHTS: RepresentativeSuccessWeights = {
-  liveCount: 30,
-  auditScore: 30,
-  npsScore: 20,
-  meetingScore: 20,
-}
 
 export type CloudSyncStatus = 'idle' | 'queued' | 'saving' | 'success' | 'error'
 
@@ -176,8 +170,11 @@ function normalizeTopFirm(firm: unknown, rank: number, seedFirm?: TopFirm): TopF
 function normalizeRepresentativeRecord(
   record: unknown,
   index: number,
+  year: number,
+  month: number,
   seed?: RepresentativeSuccessRecord,
 ): RepresentativeSuccessRecord {
+  const usesCsatModel = isRepresentativeCsatPeriod(year, month)
   const base = seed ?? {
     id: `rep-${index + 1}`,
     name: '',
@@ -185,6 +182,7 @@ function normalizeRepresentativeRecord(
     liveTarget: 0,
     auditScore: 0,
     npsScore: 0,
+    csatScore: 0,
     avgGoLiveDurationDays: 0,
     meetingScore: 0,
     imageUrl: '',
@@ -201,6 +199,16 @@ function normalizeRepresentativeRecord(
     liveTarget: Math.max(0, toNumber(record.liveTarget, base.liveTarget)),
     auditScore: Math.max(0, Math.min(100, toNumber(record.auditScore, base.auditScore))),
     npsScore: Math.max(0, Math.min(5, toNumber(record.npsScore, base.npsScore))),
+    csatScore: Math.max(
+      0,
+      Math.min(
+        5,
+        toNumber(
+          record.csatScore,
+          usesCsatModel ? toNumber(record.npsScore, base.csatScore) : base.csatScore,
+        ),
+      ),
+    ),
     avgGoLiveDurationDays: Math.max(0, toNumber(record.avgGoLiveDurationDays, base.avgGoLiveDurationDays)),
     meetingScore: Math.max(0, Math.min(5, toNumber(record.meetingScore, base.meetingScore))),
     imageUrl: typeof record.imageUrl === 'string' ? record.imageUrl : base.imageUrl,
@@ -210,16 +218,24 @@ function normalizeRepresentativeRecord(
 function normalizeRepresentativeWeights(
   weights: unknown,
   seed: RepresentativeSuccessWeights,
+  year: number,
+  month: number,
 ): RepresentativeSuccessWeights {
   if (!isObjectLike(weights)) {
     return seed
   }
 
+  const usesCsatModel = isRepresentativeCsatPeriod(year, month)
+  const legacyCombinedCsatWeight = Math.max(0, toNumber(weights.npsScore, 0)) + Math.max(0, toNumber(weights.meetingScore, 0))
+
   return {
     liveCount: Math.max(0, toNumber(weights.liveCount, seed.liveCount)),
     auditScore: Math.max(0, toNumber(weights.auditScore, seed.auditScore)),
-    npsScore: Math.max(0, toNumber(weights.npsScore, seed.npsScore)),
-    meetingScore: Math.max(0, toNumber(weights.meetingScore, seed.meetingScore)),
+    npsScore: usesCsatModel ? 0 : Math.max(0, toNumber(weights.npsScore, seed.npsScore)),
+    meetingScore: usesCsatModel ? 0 : Math.max(0, toNumber(weights.meetingScore, seed.meetingScore)),
+    csatScore: usesCsatModel
+      ? Math.max(0, toNumber(weights.csatScore, legacyCombinedCsatWeight > 0 ? legacyCombinedCsatWeight : seed.csatScore))
+      : Math.max(0, toNumber(weights.csatScore, seed.csatScore)),
   }
 }
 
@@ -450,7 +466,7 @@ function createEmptyPeriodData(year: number, month: number): DashboardPeriodData
     realizedCount: null,
     teamPerformance: [],
     representativeSuccess: [],
-    representativeWeights: deepClone(DEFAULT_REPRESENTATIVE_WEIGHTS),
+    representativeWeights: deepClone(getDefaultRepresentativeWeights(year, normalizedMonth)),
     monthlyTargets: [],
     successIndex: {
       overallScore: 0,
@@ -561,13 +577,15 @@ function sanitizePeriodData(year: number, month: number, raw: unknown): Dashboar
 
   const representativeSuccess = Array.isArray(safeRaw.representativeSuccess)
     ? safeRaw.representativeSuccess.map((record, idx) =>
-        normalizeRepresentativeRecord(record, idx, seed.representativeSuccess[idx]),
+        normalizeRepresentativeRecord(record, idx, year, month, seed.representativeSuccess[idx]),
       )
     : seed.representativeSuccess
 
   const representativeWeights = normalizeRepresentativeWeights(
     safeRaw.representativeWeights,
     seed.representativeWeights,
+    year,
+    month,
   )
 
   const monthlyTargets = Array.isArray(safeRaw.monthlyTargets)
