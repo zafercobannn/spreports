@@ -1,7 +1,7 @@
 import type { RepresentativeSuccessRecord, RepresentativeSuccessWeights } from '@/types/team'
 
 export const CSAT_EFFECTIVE_YEAR = 2026
-export const CSAT_EFFECTIVE_MONTH = 4
+export const CSAT_EFFECTIVE_MONTH = 3
 
 export interface RepresentativeDerivedMetrics {
   mode: 'legacy' | 'csat'

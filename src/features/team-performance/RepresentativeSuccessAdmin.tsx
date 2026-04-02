@@ -54,7 +54,7 @@ export function RepresentativeSuccessAdmin({
               <p className="text-[11px] font-semibold tracking-[0.18em] text-muted-foreground uppercase">KPI Ağırlıkları</p>
               <p className="mt-2 text-sm text-muted-foreground">
                 {usesCsatModel
-                  ? 'Nisan 2026 itibarıyla başarı endeksi Hedef, Audit ve CSAT dağılımıyla hesaplanır.'
+                  ? 'Mart 2026 itibarıyla başarı endeksi Hedef, Audit ve CSAT dağılımıyla hesaplanır.'
                   : 'Başarı endeksi dağılımını günlük operasyon ihtiyacına göre düzenle.'}
               </p>
             </div>
