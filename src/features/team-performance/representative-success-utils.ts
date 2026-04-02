@@ -108,15 +108,16 @@ function detectDelimiter(line: string): ',' | ';' {
   return semicolonCount > commaCount ? ';' : ','
 }
 
-function parseCsvLine(line: string, delimiter: ',' | ';'): string[] {
-  const values: string[] = []
+function parseCsvRows(text: string, delimiter: ',' | ';'): string[][] {
+  const rows: string[][] = []
+  let row: string[] = []
   let current = ''
   let inQuotes = false
 
-  for (let i = 0; i < line.length; i++) {
-    const char = line[i]
+  for (let i = 0; i < text.length; i++) {
+    const char = text[i]
     if (char === '"') {
-      if (inQuotes && line[i + 1] === '"') {
+      if (inQuotes && text[i + 1] === '"') {
         current += '"'
         i++
       } else {
@@ -126,7 +127,17 @@ function parseCsvLine(line: string, delimiter: ',' | ';'): string[] {
     }
 
     if (char === delimiter && !inQuotes) {
-      values.push(current.trim())
+      row.push(current.trim())
+      current = ''
+      continue
+    }
+
+    if (char === '\n' && !inQuotes) {
+      row.push(current.trim())
+      if (row.some((cell) => cell.length > 0)) {
+        rows.push(row)
+      }
+      row = []
       current = ''
       continue
     }
@@ -134,8 +145,14 @@ function parseCsvLine(line: string, delimiter: ',' | ';'): string[] {
     current += char
   }
 
-  values.push(current.trim())
-  return values
+  if (current.length > 0 || row.length > 0) {
+    row.push(current.trim())
+    if (row.some((cell) => cell.length > 0)) {
+      rows.push(row)
+    }
+  }
+
+  return rows
 }
 
 function resolveHeaderIndex(headers: string[], candidates: string[]): number {
@@ -155,27 +172,43 @@ export function parseRepresentativeCsv(
   csvText: string,
   options?: { year: number; month: number },
 ): RepresentativeSuccessRecord[] {
-  const lines = csvText
-    .replace(/\r/g, '')
-    .split('\n')
-    .map((line) => line.trim())
-    .filter((line) => line.length > 0)
+  const normalizedText = csvText
+    .replace(/\r\n/g, '\n')
+    .replace(/\r/g, '\n')
+    .replace(/^\uFEFF/, '')
 
-  if (lines.length < 2) {
+  const headerLine = normalizedText
+    .split('\n')
+    .find((line) => line.trim().length > 0)
+  if (!headerLine) {
     throw new Error('CSV dosyasında başlık ve en az 1 veri satırı olmalı.')
   }
 
-  const headerLine = lines[0].replace(/^\uFEFF/, '')
   const delimiter = detectDelimiter(headerLine)
-  const headers = parseCsvLine(headerLine, delimiter)
+  const rows = parseCsvRows(normalizedText, delimiter)
+  if (rows.length < 2) {
+    throw new Error('CSV dosyasında başlık ve en az 1 veri satırı olmalı.')
+  }
+
+  const headers = rows[0]
   const usesCsatModel = options ? isRepresentativeCsatPeriod(options.year, options.month) : false
 
   const nameIdx = resolveHeaderIndex(headers, ['temsilci', 'temsilciadi', 'mtadi'])
   const liveIdx = resolveHeaderIndex(headers, ['canliyaalinanhesapsayisi', 'canliyaalinanfirmaadedi'])
   const liveTargetIdx = resolveHeaderIndex(headers, ['canliyaalinanhesapsayisihedefi', 'canliyaalinanfirmaadedihedefi'])
-  const auditIdx = resolveHeaderIndex(headers, ['auditpuani', 'auditskoru'])
+  const auditIdx = resolveHeaderIndex(headers, ['auditpuani', 'auditpuan', 'auditskoru'])
   const npsIdx = resolveHeaderIndex(headers, ['npsanketskoru', 'onboardinganketskoru', 'npsscore'])
-  const csatIdx = resolveHeaderIndex(headers, ['csat', 'csatskoru', 'csatanketskoru', 'musterimemnuniyetiskoru', 'npsanketskoru', 'onboardinganketskoru', 'npsscore'])
+  const csatIdx = resolveHeaderIndex(headers, [
+    'csat',
+    'csatskoru',
+    'csatanketskoru',
+    'musterimemnuniyetiskoru',
+    'csatcalltoplantidegerlendirmesimail',
+    'csatcalltoplantidegerlendirmesimailpuani',
+    'npsanketskoru',
+    'onboardinganketskoru',
+    'npsscore',
+  ])
   const avgGoLiveDurationIdx = resolveHeaderIndex(headers, [
     'ortalamacanliyaalmasuresi',
     'ortalamacanliyaalmasuresigun',
@@ -187,14 +220,13 @@ export function parseRepresentativeCsv(
 
   if (usesCsatModel) {
     if ([nameIdx, liveIdx, liveTargetIdx, auditIdx, csatIdx].some((idx) => idx === -1)) {
-      throw new Error('CSV başlıkları eksik. Gerekli alanlar: Temsilci, Canlıya Alınan Hesap Sayısı, Hedef, Audit, CSAT.')
+      throw new Error('CSV başlıkları eksik. Gerekli alanlar: Temsilci, Canlıya Alınan Hesap Sayısı, Canlıya Alınan Hesap Sayısı Hedefi, Audit Puan, CSAT.')
     }
   } else if ([nameIdx, liveIdx, liveTargetIdx, auditIdx, npsIdx, meetingIdx].some((idx) => idx === -1)) {
     throw new Error('CSV başlıkları eksik. Gerekli alanlar: Temsilci, Canlıya Alınan Hesap Sayısı, Hedef, Audit, NPS, Toplantı.')
   }
 
-  const records = lines.slice(1).map((line, index) => {
-    const cells = parseCsvLine(line, delimiter)
+  const records = rows.slice(1).map((cells, index) => {
     const name = cells[nameIdx] ?? ''
     return {
       id: buildRecordId(name, index),

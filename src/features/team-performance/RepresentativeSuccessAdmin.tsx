@@ -40,8 +40,8 @@ export function RepresentativeSuccessAdmin({
             <Badge variant="outline">Temsilci</Badge>
             <Badge variant="outline">Canlıya Alınan Hesap Sayısı</Badge>
             <Badge variant="outline">Canlıya Alınan Hesap Sayısı Hedefi</Badge>
-            <Badge variant="outline">Audit Puanı</Badge>
-            <Badge variant="outline">{usesCsatModel ? 'CSAT' : 'NPS Anket Skoru'}</Badge>
+            <Badge variant="outline">Audit Puan</Badge>
+            <Badge variant="outline">{usesCsatModel ? 'CSAT (CALL + Toplantı Değerlendirmesi + Mail)' : 'NPS Anket Skoru'}</Badge>
             <Badge variant="outline">Ortalama Canlıya Alma Süresi (gün)</Badge>
             {!usesCsatModel && <Badge variant="outline">Toplantı Değerlendirmesi</Badge>}
             <Badge variant="outline">Görsel URL</Badge>
