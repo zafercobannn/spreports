@@ -9,6 +9,8 @@ export function TeamPerformanceTab() {
   const { month, year } = useFilters()
   const periodData = useDashboardPeriodData()
   if (!periodData) return null
+  const autoRealizedCount = periodData.targets.filter((target) => target.status === 'live').length
+  const trackedRealizedCount = periodData.realizedCount ?? autoRealizedCount
 
   return (
     <div className="space-y-6">
@@ -19,6 +21,8 @@ export function TeamPerformanceTab() {
             weights={periodData.representativeWeights}
             month={month}
             monthLabel={getMonthName(month)}
+            trackedRealizedCount={trackedRealizedCount}
+            trackedTargetCount={periodData.targetCount}
             year={year}
           />
           <RepresentativeMonthlyNpsChart year={year} month={month} />

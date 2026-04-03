@@ -4,7 +4,7 @@ import { Card, CardContent, CardHeader, CardTitle, CardDescription } from '@/com
 import { Badge } from '@/components/ui/badge'
 import { getRepresentativePhoto } from '@/constants/representative-photos'
 import { formatNumber } from '@/utils/format'
-import { average, sum } from '@/utils/calculations'
+import { average } from '@/utils/calculations'
 import type { RepresentativeSuccessRecord, RepresentativeSuccessWeights } from '@/types/team'
 import { calculateRepresentativeMetrics, isRepresentativeCsatPeriod } from './representative-success-utils'
 
@@ -13,6 +13,8 @@ interface RepresentativeSuccessBoardProps {
   weights: RepresentativeSuccessWeights
   month: number
   monthLabel: string
+  trackedRealizedCount: number
+  trackedTargetCount: number
   year: number
 }
 
@@ -42,6 +44,8 @@ export function RepresentativeSuccessBoard({
   weights,
   month,
   monthLabel,
+  trackedRealizedCount,
+  trackedTargetCount,
   year,
 }: RepresentativeSuccessBoardProps) {
   const usesCsatModel = isRepresentativeCsatPeriod(year, month)
@@ -68,8 +72,6 @@ export function RepresentativeSuccessBoard({
   const top = rows[0]
   const avgLive = average(rows.map((row) => row.record.liveCount))
   const avgAudit = average(rows.map((row) => row.record.auditScore))
-  const totalTarget = sum(rows.map((row) => row.record.liveTarget))
-  const totalLive = sum(rows.map((row) => row.record.liveCount))
   const avgIndex = average(rows.map((row) => row.metrics.successIndex))
 
   return (
@@ -94,11 +96,11 @@ export function RepresentativeSuccessBoard({
           </div>
           <div className="rounded-xl border border-border/70 bg-white/75 p-3">
             <p className="text-xs text-muted-foreground">Canlıya Alınan Hedef</p>
-            <p className="text-2xl font-semibold">{formatNumber(totalTarget)}</p>
+            <p className="text-2xl font-semibold">{formatNumber(trackedTargetCount)}</p>
           </div>
           <div className="rounded-xl border border-border/70 bg-white/75 p-3">
             <p className="text-xs text-muted-foreground">Canlıya Alınan Toplam</p>
-            <p className="text-2xl font-semibold">{formatNumber(totalLive)}</p>
+            <p className="text-2xl font-semibold">{formatNumber(trackedRealizedCount)}</p>
           </div>
           <div className="rounded-xl border border-border/70 bg-white/75 p-3">
             <p className="text-xs text-muted-foreground">Başarı Endeksi Ort.</p>
