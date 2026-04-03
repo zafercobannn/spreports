@@ -1,4 +1,6 @@
+import { Trash2 } from 'lucide-react'
 import { Badge } from '@/components/ui/badge'
+import { Button } from '@/components/ui/button'
 import { NumberInput } from '@/components/ui/number-input'
 import type { RepresentativeSuccessRecord, RepresentativeSuccessWeights } from '@/types/team'
 import { isRepresentativeCsatPeriod } from './representative-success-utils'
@@ -126,14 +128,15 @@ export function RepresentativeSuccessAdmin({
           </div>
         ) : (
           <div className="mt-5 space-y-3">
-            <div className="hidden grid-cols-[minmax(0,1fr)_180px] gap-3 px-1 lg:grid">
+            <div className="hidden grid-cols-[minmax(0,1fr)_180px_44px] gap-3 px-1 lg:grid">
               <span className="text-[11px] font-semibold tracking-[0.14em] text-muted-foreground uppercase">Temsilci</span>
               <span className="text-[11px] font-semibold tracking-[0.14em] text-muted-foreground uppercase">Süre (gün)</span>
+              <span />
             </div>
             {data.map((item, index) => (
               <div
                 key={item.id}
-                className="grid grid-cols-1 gap-3 rounded-2xl border border-border/60 bg-white/78 p-3 lg:grid-cols-[minmax(0,1fr)_180px]"
+                className="grid grid-cols-1 gap-3 rounded-2xl border border-border/60 bg-white/78 p-3 lg:grid-cols-[minmax(0,1fr)_180px_44px]"
               >
                 <div className="space-y-1">
                   <span className="text-[11px] font-semibold tracking-[0.14em] text-muted-foreground uppercase lg:hidden">Temsilci</span>
@@ -158,6 +161,23 @@ export function RepresentativeSuccessAdmin({
                     }}
                   />
                 </label>
+                <div className="flex items-end justify-end">
+                  <Button
+                    type="button"
+                    variant="outline"
+                    size="icon"
+                    className="h-10 w-10 rounded-xl border-black/10 bg-white/80 text-rose-600 hover:bg-rose-50 hover:text-rose-700"
+                    onClick={() => {
+                      if (!window.confirm(`${item.name || `Temsilci ${index + 1}`} kaydını silmek istiyor musun?`)) {
+                        return
+                      }
+                      onDataChange(data.filter((_, recordIndex) => recordIndex !== index))
+                    }}
+                    aria-label={`${item.name || `Temsilci ${index + 1}`} kaydını sil`}
+                  >
+                    <Trash2 className="h-4 w-4" />
+                  </Button>
+                </div>
               </div>
             ))}
           </div>
