@@ -7,6 +7,7 @@ interface TrendIndicatorProps {
   direction: TrendDirection
   isPositiveGood?: boolean
   size?: 'sm' | 'md'
+  alwaysShowValue?: boolean
 }
 
 export function TrendIndicator({
@@ -14,6 +15,7 @@ export function TrendIndicator({
   direction,
   isPositiveGood = true,
   size = 'sm',
+  alwaysShowValue = false,
 }: TrendIndicatorProps) {
   const isGood =
     direction === 'flat'
@@ -32,6 +34,12 @@ export function TrendIndicator({
         ? TrendingDown
         : Minus
 
+  const showValue = alwaysShowValue || direction !== 'flat'
+  const absValue = Math.abs(value)
+  const formattedValue = absValue >= 1
+    ? value.toFixed(1)
+    : value.toFixed(2)
+
   return (
     <span
       className={cn(
@@ -42,8 +50,8 @@ export function TrendIndicator({
       )}
     >
       <Icon className={iconSize} />
-      {direction !== 'flat' && (
-        <span>{value > 0 ? '+' : ''}{value.toFixed(1)}%</span>
+      {showValue && (
+        <span>{value > 0 ? '+' : ''}{formattedValue}%</span>
       )}
     </span>
   )

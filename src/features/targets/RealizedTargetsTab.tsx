@@ -6,23 +6,6 @@ import { getPeriodKey, useDashboardDataStore } from '@/stores/dashboard-data-sto
 import { getMonthName } from '@/utils/date-utils'
 import { TargetBrandsList } from './TargetBrandsList'
 
-function getOffsetPeriod(year: number, month: number, offset: number): { year: number; month: number } {
-  let nextYear = year
-  let nextMonth = month + offset
-
-  while (nextMonth < 1) {
-    nextMonth += 12
-    nextYear -= 1
-  }
-
-  while (nextMonth > 12) {
-    nextMonth -= 12
-    nextYear += 1
-  }
-
-  return { year: nextYear, month: nextMonth }
-}
-
 function TargetCountSummary({
   realized,
   target,
@@ -75,25 +58,21 @@ export function RealizedTargetsTab() {
   const { year, month } = useFilters()
   const ensurePeriod = useDashboardDataStore((s) => s.ensurePeriod)
 
-  const previousPeriod = useMemo(() => getOffsetPeriod(year, month, -1), [year, month])
-  const previousKey = useMemo(
-    () => getPeriodKey(previousPeriod.year, previousPeriod.month),
-    [previousPeriod.month, previousPeriod.year],
-  )
-  const previousData = useDashboardDataStore((s) => s.periods[previousKey])
+  const periodKey = useMemo(() => getPeriodKey(year, month), [year, month])
+  const periodData = useDashboardDataStore((s) => s.periods[periodKey])
 
   useEffect(() => {
-    ensurePeriod(previousPeriod.year, previousPeriod.month)
-  }, [ensurePeriod, previousPeriod.month, previousPeriod.year])
+    ensurePeriod(year, month)
+  }, [ensurePeriod, month, year])
 
   const realizedTargets = useMemo(
-    () => (previousData?.targets ?? []).filter((target) => target.status === 'live'),
-    [previousData?.targets],
+    () => (periodData?.targets ?? []).filter((target) => target.status === 'live'),
+    [periodData?.targets],
   )
 
-  const targetCount = previousData?.targetCount ?? 0
-  const realizedCount = previousData?.realizedCount ?? realizedTargets.length
-  const periodLabel = `${getMonthName(previousPeriod.month)} ${previousPeriod.year}`
+  const targetCount = periodData?.targetCount ?? 0
+  const realizedCount = periodData?.realizedCount ?? realizedTargets.length
+  const periodLabel = `${getMonthName(month)} ${year}`
 
   return (
     <div className="space-y-6">
