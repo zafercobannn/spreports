@@ -57,6 +57,8 @@ export function XMonthTargetTab() {
     ensurePeriod(targetPeriod.year, targetPeriod.month)
   }, [ensurePeriod, targetPeriod.month, targetPeriod.year])
 
+  const allTargets = targetPeriodData?.targets ?? []
+  const pendingTargets = allTargets.filter((t) => t.status !== 'live')
   const targetCount = targetPeriodData?.targetCount ?? 0
   const periodLabel = `${getMonthName(targetPeriod.month)} ${targetPeriod.year}`
 
@@ -67,7 +69,7 @@ export function XMonthTargetTab() {
         title="Bir Sonraki Ay Hedef"
         description={`${periodLabel} için canlıya alınması hedeflenen markalar`}
       >
-        <TargetBrandsList data={targetPeriodData?.targets ?? []} showStatus={false} />
+        <TargetBrandsList data={pendingTargets} showStatus={false} />
       </PageSection>
     </div>
   )
