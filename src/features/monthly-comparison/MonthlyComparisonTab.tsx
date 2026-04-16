@@ -62,7 +62,9 @@ function formatAsK(value: number): string {
   if (value <= 0) return '0'
   if (value < 1000) return formatNumber(Math.round(value))
   const divided = Math.round(value / 1000)
-  const suffix = divided >= 1000 ? 'M' : 'K'
+  let suffix = 'K'
+  if (divided >= 1_000_000) suffix = 'B'
+  else if (divided >= 1000) suffix = 'M'
   return `${formatNumber(divided)} ${suffix}`
 }
 
