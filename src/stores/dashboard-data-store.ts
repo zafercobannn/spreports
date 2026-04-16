@@ -846,7 +846,7 @@ function ensurePeriodRemoteFirst(
       await migrateLocalPeriodsToCloudIfNeeded(get, set)
 
       const cloudData = await loadDashboardPeriodFromCloud(normalized.year, normalized.month)
-      if (cloudData && getLocalPeriodVersion(key) === localVersionAtStart) {
+      if (cloudData && getLocalPeriodVersion(key) === localVersionAtStart && !periodSaveTimers.has(key)) {
         set((state) => ({
           periods: {
             ...ensurePeriodsMap(state.periods),

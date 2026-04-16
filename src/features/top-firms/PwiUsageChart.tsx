@@ -8,7 +8,9 @@ interface PwiUsageChartProps {
 }
 
 export function PwiUsageChart({ data }: PwiUsageChartProps) {
-  const usingPwi = data.filter((firm) => firm.usesPwi).length
+  const firmsUsingPwi = data.filter((firm) => firm.usesPwi)
+  const firmsNotUsingPwi = data.filter((firm) => !firm.usesPwi)
+  const usingPwi = firmsUsingPwi.length
   const totalFirmCount = data.length
   const notUsingPwi = Math.max(0, totalFirmCount - usingPwi)
   const hasData = totalFirmCount > 0
@@ -44,11 +46,33 @@ export function PwiUsageChart({ data }: PwiUsageChartProps) {
 
               const count = Number(datum.value)
               const percent = (count / totalFirmCount) * 100
+              const firms =
+                datum.id === 'PWI Kullanan' ? firmsUsingPwi : firmsNotUsingPwi
+
               return (
-                <div className="rounded-lg border border-border/80 bg-white px-3 py-2 text-xs shadow-md">
+                <div className="rounded-lg border border-border/80 bg-white px-3 py-2 text-xs shadow-md max-h-64 overflow-y-auto">
                   <p className="font-semibold text-foreground">{datum.label}</p>
-                  <p className="text-muted-foreground">{formatNumber(count)} firma</p>
-                  <p className="text-muted-foreground">{formatPercent(percent)}</p>
+                  <p className="text-muted-foreground mb-2">
+                    {formatNumber(count)} firma ({formatPercent(percent)})
+                  </p>
+                  {firms.length > 0 && (
+                    <table className="w-full border-collapse text-left">
+                      <thead>
+                        <tr className="border-b border-border/60">
+                          <th className="py-1 pr-3 font-medium text-muted-foreground">#</th>
+                          <th className="py-1 font-medium text-muted-foreground">Mağaza</th>
+                        </tr>
+                      </thead>
+                      <tbody>
+                        {firms.map((firm, i) => (
+                          <tr key={firm.name} className="border-b border-border/30 last:border-0">
+                            <td className="py-1 pr-3 text-muted-foreground">{i + 1}</td>
+                            <td className="py-1 text-foreground">{firm.name}</td>
+                          </tr>
+                        ))}
+                      </tbody>
+                    </table>
+                  )}
                 </div>
               )
             }}
