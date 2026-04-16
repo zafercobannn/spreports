@@ -61,6 +61,7 @@ function getOffsetPeriod(year: number, month: number, offset: number): { year: n
 function formatAsK(value: number): string {
   if (value <= 0) return '0'
   if (value < 1000) return formatNumber(Math.round(value))
+  if (value >= 1_000_000) return `${formatNumber(Math.round(value / 1_000_000))} M`
   return `${formatNumber(Math.round(value / 1000))} K`
 }
 
