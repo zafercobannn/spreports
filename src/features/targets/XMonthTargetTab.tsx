@@ -46,6 +46,9 @@ export function XMonthTargetTab() {
   const { year, month } = useFilters()
   const ensurePeriod = useDashboardDataStore((s) => s.ensurePeriod)
 
+  const currentPeriodKey = useMemo(() => getPeriodKey(year, month), [year, month])
+  const currentPeriodData = useDashboardDataStore((s) => s.periods[currentPeriodKey])
+
   const targetPeriod = useMemo(() => getOffsetPeriod(year, month, 1), [year, month])
   const targetKey = useMemo(
     () => getPeriodKey(targetPeriod.year, targetPeriod.month),
@@ -54,11 +57,22 @@ export function XMonthTargetTab() {
   const targetPeriodData = useDashboardDataStore((s) => s.periods[targetKey])
 
   useEffect(() => {
+    ensurePeriod(year, month)
     ensurePeriod(targetPeriod.year, targetPeriod.month)
-  }, [ensurePeriod, targetPeriod.month, targetPeriod.year])
+  }, [ensurePeriod, year, month, targetPeriod.month, targetPeriod.year])
+
+  const currentLiveNames = useMemo(() => {
+    const names = new Set<string>()
+    for (const t of currentPeriodData?.targets ?? []) {
+      if (t.status === 'live' && t.name.trim()) names.add(t.name.trim().toLocaleLowerCase('tr-TR'))
+    }
+    return names
+  }, [currentPeriodData?.targets])
 
   const allTargets = targetPeriodData?.targets ?? []
-  const pendingTargets = allTargets.filter((t) => t.status !== 'live')
+  const pendingTargets = allTargets.filter(
+    (t) => t.status !== 'live' && !currentLiveNames.has(t.name.trim().toLocaleLowerCase('tr-TR')),
+  )
   const targetCount = targetPeriodData?.targetCount ?? 0
   const periodLabel = `${getMonthName(targetPeriod.month)} ${targetPeriod.year}`
 
