@@ -70,7 +70,8 @@ export function KPICard({
       <div className="relative flex items-start justify-between gap-2">
         <p
           className={cn(
-            'text-[11px] font-semibold uppercase tracking-[0.10em]',
+            'text-[11px] font-semibold tracking-[0.10em]',
+            /\bikas\b/i.test(label) ? 'normal-case' : 'uppercase',
             isInk
               ? 'text-[var(--color-ink-foreground)]/55'
               : isAccent

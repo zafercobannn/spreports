@@ -59,14 +59,14 @@ export function GPVTrendChart() {
       height={280}
       isEmpty={isEmpty}
       actions={
-        <div className="flex items-center gap-3.5 text-[11px]">
+        <div className="flex items-center gap-3.5 text-[12px]">
           <div className="flex items-center gap-1.5">
-            <span className="inline-block h-[2px] w-3 rounded bg-[var(--color-chart)]" />
-            <span className="text-muted-foreground">SP GPV</span>
+            <span className="inline-block h-2.5 w-2.5 rounded-full bg-[#a8c428]" />
+            <span className="font-medium text-foreground">SP GPV</span>
           </div>
           <div className="flex items-center gap-1.5">
-            <span className="inline-block h-[2px] w-3 rounded bg-[var(--color-chart-2)] opacity-70" />
-            <span className="text-muted-foreground">ikas GPV</span>
+            <span className="inline-block h-2.5 w-2.5 rounded-full bg-[#1a1a1d]" />
+            <span className="font-medium text-foreground">ikas GPV</span>
           </div>
         </div>
       }
@@ -78,12 +78,14 @@ export function GPVTrendChart() {
         yScale={{ type: 'linear', min: 0, max: 'auto', stacked: false }}
         curve="monotoneX"
         enableArea
-        areaOpacity={0.08}
-        colors={['#3d8d86', '#71b5af']}
-        lineWidth={2}
+        areaOpacity={0.10}
+        colors={['#a8c428', '#1a1a1d']}
+        lineWidth={2.5}
         enablePoints
-        pointSize={4}
-        pointBorderWidth={0}
+        pointSize={6}
+        pointBorderWidth={2}
+        pointBorderColor={{ from: 'serieColor' }}
+        pointColor="#ffffff"
         useMesh
         gridYValues={5}
         axisLeft={{

@@ -109,7 +109,7 @@ function IkasGPVHeroCard({ data }: { data: MonthlyGPV }) {
       <div className="relative flex h-full flex-col p-5">
         <div className="flex items-start justify-between gap-2">
           <div>
-            <span className="rounded-full bg-foreground/10 px-2.5 py-1 text-[10px] font-semibold uppercase tracking-[0.16em] text-foreground/70">
+            <span className="rounded-full bg-foreground/10 px-2.5 py-1 text-[10px] font-semibold tracking-[0.16em] text-foreground/70">
               ikas GPV
             </span>
           </div>
@@ -274,7 +274,7 @@ function GPVDonutCard({ data }: { data: MonthlyGPV }) {
           </p>
         </div>
         <div className="rounded-md border border-border bg-surface-muted/40 px-3 py-2">
-          <p className="text-[10px] font-semibold uppercase tracking-[0.1em] text-muted-foreground">ikas GPV</p>
+          <p className="text-[10px] font-semibold tracking-[0.1em] text-muted-foreground">ikas GPV</p>
           <p className="mt-0.5 font-mono tabular text-[13px] font-semibold text-foreground">
             {formatCompactCurrency(data.ikasGPV)}
           </p>

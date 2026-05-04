@@ -32,7 +32,12 @@ export function ChartContainer({
         <div className="flex items-start justify-between gap-3 px-6 pt-5 pb-3">
           <div>
             {title && (
-              <span className="rounded-full bg-foreground/10 px-2.5 py-1 text-[10px] font-semibold uppercase tracking-[0.16em] text-foreground/70">
+              <span
+                className={
+                  'rounded-full bg-foreground/10 px-2.5 py-1 text-[10px] font-semibold tracking-[0.16em] text-foreground/70 ' +
+                  (/\bikas\b/i.test(title) ? 'normal-case' : 'uppercase')
+                }
+              >
                 {title}
               </span>
             )}

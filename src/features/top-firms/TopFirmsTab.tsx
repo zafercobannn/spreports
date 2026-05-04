@@ -103,10 +103,16 @@ function UsageMiniCard({
   nonUsers: number
   total: number
 }) {
+  const hasIkas = /\bikas\b/i.test(label)
   return (
     <div className="bento-card flex h-full flex-col justify-between gap-4 p-5">
       <div className="flex items-start justify-between">
-        <span className="rounded-full bg-foreground/10 px-2.5 py-1 text-[10px] font-semibold uppercase tracking-[0.16em] text-foreground/70">
+        <span
+          className={
+            'rounded-full bg-foreground/10 px-2.5 py-1 text-[10px] font-semibold tracking-[0.16em] text-foreground/70 ' +
+            (hasIkas ? 'normal-case' : 'uppercase')
+          }
+        >
           {label}
         </span>
         <span className="font-mono tabular text-[11px] text-muted-foreground">
