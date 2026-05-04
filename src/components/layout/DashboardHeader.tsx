@@ -69,7 +69,7 @@ export function DashboardHeader({
   const tabLabel = TAB_LABELS[activeTab]
 
   return (
-    <header className="space-y-6 px-7 pt-6">
+    <header className="relative z-30 space-y-6 px-7 pt-6">
       {/* Top pill nav */}
       <div className="fade-up flex items-center justify-between gap-3">
         <div className="flex items-center gap-3 shrink-0">

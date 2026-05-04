@@ -1,5 +1,6 @@
 import { RepresentativeSuccessBoard } from './RepresentativeSuccessBoard'
 import { RepresentativeMonthlyNpsChart } from './RepresentativeMonthlyNpsChart'
+import { RepCompareTab } from '@/features/representative-compare/RepCompareTab'
 import { PageSection } from '@/components/layout/PageSection'
 import { getMonthName } from '@/utils/date-utils'
 import { useFilters } from '@/hooks/use-filters'
@@ -27,6 +28,10 @@ export function TeamPerformanceTab() {
           />
           <RepresentativeMonthlyNpsChart year={year} month={month} />
         </div>
+      </PageSection>
+
+      <PageSection title="Temsilci Karşılaştırma" description="İki temsilciyi seçilen dönem aralığında karşılaştır">
+        <RepCompareTab />
       </PageSection>
     </div>
   )
