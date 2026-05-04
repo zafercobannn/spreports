@@ -12,11 +12,14 @@ import { TopFirmsTab } from '@/features/top-firms/TopFirmsTab'
 import { RealizedTargetsTab } from '@/features/targets/RealizedTargetsTab'
 import { XMonthTargetTab } from '@/features/targets/XMonthTargetTab'
 import { TeamPerformanceTab } from '@/features/team-performance/TeamPerformanceTab'
+import { FilterBar } from '@/components/filters/FilterBar'
+import { useFilters } from '@/hooks/use-filters'
+import { getMonthName } from '@/utils/date-utils'
 
 const SLIDES = [
   {
     id: 'overview',
-    title: 'Aylık Genel Bakış',
+    title: 'Genel Bakış',
     component: MonthlyOverviewTab,
     notes: 'Bu slayt aylık GPV metriklerini, canlı hesap sayılarını ve premium onboarding verilerini göstermektedir.',
   },
@@ -71,6 +74,7 @@ export function PresentationMode() {
   } = usePresentationStore()
 
   const { ref, enterFullscreen, exitFullscreen } = useFullscreen()
+  const { year, month } = useFilters()
 
   useEffect(() => {
     setTotalSlides(SLIDES.length)
@@ -105,6 +109,8 @@ export function PresentationMode() {
 
   const currentSlide = SLIDES[currentSlideIndex]
   const SlideComponent = currentSlide?.component
+  const periodLabel = `${getMonthName(month)} ${year}`
+  const slideTitle = currentSlide ? `${periodLabel} · ${currentSlide.title}` : ''
 
   return (
     <div
@@ -112,8 +118,11 @@ export function PresentationMode() {
       className="fixed inset-0 z-50 flex flex-col bg-background"
     >
       <div className={cn('flex-1 overflow-auto p-8', mode === 'narrator' && 'h-[70vh]')}>
+        <div className="absolute right-4 top-4 z-10 rounded-2xl border border-white/70 bg-white/85 px-3 py-2 shadow-lg backdrop-blur-sm">
+          <FilterBar />
+        </div>
         <div className="mb-4 text-center">
-          <h2 className="text-2xl font-bold">{currentSlide?.title}</h2>
+          <h2 className="text-2xl font-bold">{slideTitle}</h2>
         </div>
         {SlideComponent && <SlideComponent />}
       </div>

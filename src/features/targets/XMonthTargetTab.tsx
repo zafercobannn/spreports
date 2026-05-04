@@ -25,16 +25,16 @@ function getOffsetPeriod(year: number, month: number, offset: number): { year: n
 
 function TargetCountCard({ targetCount, periodLabel }: { targetCount: number; periodLabel: string }) {
   return (
-    <div className="rounded-xl border border-black/6 bg-white/60 p-5 backdrop-blur-sm">
+    <div className="lin-section p-[18px]" style={{ background: 'linear-gradient(135deg, var(--color-accent-soft), var(--color-surface))' }}>
       <div className="flex items-center gap-3">
-        <div className="flex h-10 w-10 items-center justify-center rounded-lg bg-amber-100 text-amber-600">
-          <Target className="h-5 w-5" />
+        <div className="flex h-9 w-9 items-center justify-center rounded-md border border-border bg-[var(--color-accent-soft)] text-[var(--color-accent-text)]">
+          <Target className="h-4 w-4" />
         </div>
         <div>
-          <p className="text-sm font-medium text-muted-foreground">{periodLabel}</p>
-          <p className="text-2xl font-bold tracking-tight">
+          <p className="text-[11px] font-medium tracking-[0.02em] text-muted-foreground">{periodLabel}</p>
+          <p className="font-mono text-[22px] font-semibold tracking-[-0.02em] text-foreground tabular">
             {targetCount > 0 ? targetCount : '—'}
-            <span className="ml-2 text-base font-normal text-muted-foreground">adet hedef</span>
+            <span className="ml-2 font-sans text-[13px] font-normal text-muted-foreground">adet hedef</span>
           </p>
         </div>
       </div>

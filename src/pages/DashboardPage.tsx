@@ -1,8 +1,6 @@
 import { useState } from 'react'
 import { DashboardLayout } from '@/components/layout/DashboardLayout'
 import { DashboardHeader } from '@/components/layout/DashboardHeader'
-import { TabNavigation } from '@/components/layout/TabNavigation'
-import { Tabs, TabsContent } from '@/components/ui/tabs'
 import { useAdminAuth } from '@/features/auth/AdminAuthProvider'
 import { MonthlyOverviewTab } from '@/features/monthly-overview/MonthlyOverviewTab'
 import { MonthlyComparisonTab } from '@/features/monthly-comparison/MonthlyComparisonTab'
@@ -24,6 +22,8 @@ function DashboardWorkspace() {
     <DashboardLayout>
       <DashboardHeader
         isAdmin={isAdmin}
+        activeTab={activeTab}
+        onTabChange={setActiveTab}
         onPresentationMode={enterPresentation}
         userEmail={isAdmin ? userEmail : ''}
         onSignOut={
@@ -35,45 +35,15 @@ function DashboardWorkspace() {
         }
       />
 
-      <Tabs className="fade-up fade-up-delay-2">
-        <TabNavigation activeTab={activeTab} onTabChange={setActiveTab} />
-
-        {activeTab === 'monthly' && (
-          <TabsContent className="fade-up">
-            <MonthlyOverviewTab />
-          </TabsContent>
-        )}
-        {activeTab === 'comparison' && (
-          <TabsContent className="fade-up">
-            <MonthlyComparisonTab />
-          </TabsContent>
-        )}
-        {activeTab === 'cohort' && (
-          <TabsContent className="fade-up">
-            <CohortTab />
-          </TabsContent>
-        )}
-        {activeTab === 'top-firms' && (
-          <TabsContent className="fade-up">
-            <TopFirmsTab />
-          </TabsContent>
-        )}
-        {activeTab === 'realized-targets' && (
-          <TabsContent className="fade-up">
-            <RealizedTargetsTab />
-          </TabsContent>
-        )}
-        {activeTab === 'x-month-target' && (
-          <TabsContent className="fade-up">
-            <XMonthTargetTab />
-          </TabsContent>
-        )}
-        {activeTab === 'team' && (
-          <TabsContent className="fade-up">
-            <TeamPerformanceTab />
-          </TabsContent>
-        )}
-      </Tabs>
+      <div className="px-7 pb-12 pt-7">
+        {activeTab === 'monthly' && <MonthlyOverviewTab />}
+        {activeTab === 'comparison' && <MonthlyComparisonTab />}
+        {activeTab === 'cohort' && <CohortTab />}
+        {activeTab === 'top-firms' && <TopFirmsTab />}
+        {activeTab === 'realized-targets' && <RealizedTargetsTab />}
+        {activeTab === 'x-month-target' && <XMonthTargetTab />}
+        {activeTab === 'team' && <TeamPerformanceTab />}
+      </div>
 
       <PresentationMode />
     </DashboardLayout>

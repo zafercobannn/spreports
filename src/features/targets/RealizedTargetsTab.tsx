@@ -19,33 +19,33 @@ function TargetCountSummary({
   const isComplete = target > 0 && realized >= target
 
   return (
-    <div className="rounded-xl border border-black/6 bg-white/60 p-5 backdrop-blur-sm">
-      <div className="flex items-center justify-between">
+    <div className="lin-section p-[18px]">
+      <div className="flex items-center justify-between gap-3">
         <div className="flex items-center gap-3">
-          <div className={`flex h-10 w-10 items-center justify-center rounded-lg ${isComplete ? 'bg-emerald-100 text-emerald-600' : 'bg-blue-100 text-blue-600'}`}>
-            <CheckCircle2 className="h-5 w-5" />
+          <div className={`flex h-9 w-9 items-center justify-center rounded-md border border-border ${isComplete ? 'bg-[var(--color-success-soft)] text-[var(--color-success)]' : 'bg-[var(--color-accent-soft)] text-[var(--color-accent-text)]'}`}>
+            <CheckCircle2 className="h-4 w-4" />
           </div>
           <div>
-            <p className="text-sm font-medium text-muted-foreground">{periodLabel}</p>
-            <p className="text-2xl font-bold tracking-tight">
+            <p className="text-[11px] font-medium tracking-[0.02em] text-muted-foreground">{periodLabel}</p>
+            <p className="font-mono text-[22px] font-semibold tracking-[-0.02em] text-foreground tabular">
               {realized}
               {target > 0 && (
-                <span className="text-lg font-normal text-muted-foreground"> / {target}</span>
+                <span className="text-[16px] text-muted-foreground"> / {target}</span>
               )}
-              <span className="ml-2 text-base font-normal text-muted-foreground">adet canlıya alındı</span>
+              <span className="ml-2 font-sans text-[13px] font-normal text-muted-foreground">canlıya alındı</span>
             </p>
           </div>
         </div>
         {target > 0 && (
-          <span className={`text-sm font-semibold ${isComplete ? 'text-emerald-600' : 'text-blue-600'}`}>
+          <span className={`lin-chip ${isComplete ? 'bg-[var(--color-success-soft)] text-[var(--color-success)]' : 'bg-[var(--color-accent-soft)] text-[var(--color-accent-text)]'}`}>
             %{percentage}
           </span>
         )}
       </div>
       {target > 0 && (
-        <div className="mt-3 h-2 overflow-hidden rounded-full bg-black/5">
+        <div className="mt-3.5 h-1.5 overflow-hidden rounded-full bg-track">
           <div
-            className={`h-full rounded-full transition-all duration-500 ${isComplete ? 'bg-emerald-500' : 'bg-blue-500'}`}
+            className={`bar-grow h-full ${isComplete ? 'bg-[var(--color-success)]' : 'bg-[var(--color-chart)]'}`}
             style={{ width: `${percentage}%` }}
           />
         </div>

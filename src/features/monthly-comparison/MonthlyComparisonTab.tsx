@@ -38,8 +38,8 @@ interface ComparisonBarDatum extends BarDatum {
   currentShare: number
 }
 
-const PREVIOUS_COLOR = '#5f5f5f'
-const CURRENT_COLOR = '#d5ea43'
+const PREVIOUS_COLOR = 'var(--color-muted-foreground)'
+const CURRENT_COLOR = 'var(--color-chart)'
 
 function getOffsetPeriod(year: number, month: number, offset: number): { year: number; month: number } {
   let nextYear = year
@@ -121,9 +121,9 @@ function createValueLabelLayer(): (props: BarCustomLayerProps<ComparisonBarDatum
             x={bar.x + bar.width / 2}
             y={bar.y - 8}
             textAnchor="middle"
-            fontSize={18}
-            fontWeight={700}
-            fill="#111827"
+            fontSize={14}
+            fontWeight={600}
+            fill="var(--color-foreground)"
           >
             {label}
           </text>
@@ -149,9 +149,9 @@ function createShareLabelLayer(): (props: BarCustomLayerProps<ComparisonBarDatum
             x={bar.x + bar.width / 2}
             y={bar.y + bar.height * 0.55}
             textAnchor="middle"
-            fontSize={12}
-            fontWeight={700}
-            fill={isPrevious ? '#f8fafc' : '#111827'}
+            fontSize={11}
+            fontWeight={600}
+            fill={isPrevious ? '#ffffff' : '#ffffff'}
           >
             {formatPercent(shareValue)}
           </text>
@@ -178,8 +178,8 @@ function createBarMonthLabelLayer(
             y={innerHeight + 18}
             textAnchor="middle"
             fontSize={10}
-            fontWeight={600}
-            fill={isPrevious ? PREVIOUS_COLOR : '#7a8f1d'}
+            fontWeight={500}
+            fill="var(--color-muted-foreground)"
           >
             {text}
           </text>
@@ -264,6 +264,68 @@ export function MonthlyComparisonTab() {
 
   return (
     <div className="space-y-6">
+      {/* Mini metric cards — current vs previous deltas */}
+      <div className="grid grid-cols-1 gap-4 lg:grid-cols-3">
+        {metrics.map((m, idx) => {
+          const change =
+            m.previousValue > 0
+              ? ((m.currentValue - m.previousValue) / m.previousValue) * 100
+              : 0
+          const isUp = change >= 0
+          const formatVal = (v: number) =>
+            m.valueType === 'k' ? formatAsK(v) : formatNumber(Math.round(v))
+          return (
+            <div
+              key={m.id}
+              className={
+                'bento-card relative overflow-hidden p-5 ' +
+                (idx === 0 ? '' : '')
+              }
+            >
+              {idx === 0 && (
+                <div
+                  className="absolute inset-0"
+                  style={{
+                    background:
+                      'linear-gradient(150deg, var(--color-accent) 0%, var(--color-accent-soft) 60%, var(--color-surface-warm) 100%)',
+                  }}
+                />
+              )}
+              <div className="relative flex flex-col gap-3">
+                <div className="flex items-start justify-between gap-2">
+                  <span className="rounded-full bg-foreground/10 px-2.5 py-1 text-[10px] font-semibold uppercase tracking-[0.16em] text-foreground/70">
+                    {m.label}
+                  </span>
+                  {m.previousValue > 0 && (
+                    <span
+                      className={
+                        'rounded-full px-3 py-1 font-mono tabular text-[11px] font-semibold ' +
+                        (isUp
+                          ? 'bg-foreground text-background'
+                          : 'bg-[var(--color-danger)] text-white')
+                      }
+                    >
+                      {isUp ? '↑' : '↓'} {Math.abs(change).toFixed(1)}%
+                    </span>
+                  )}
+                </div>
+                <p className="font-mono tabular text-[36px] font-semibold leading-[1.05] tracking-[-0.03em] text-foreground sm:text-[40px]">
+                  {formatVal(m.currentValue)}
+                </p>
+                <div className="flex items-center justify-between text-[11px] text-muted-foreground">
+                  <span className="font-mono tabular">
+                    {previousLabel}: {formatVal(m.previousValue)}
+                  </span>
+                  <span className="font-mono tabular text-foreground">
+                    {currentLabel}
+                  </span>
+                </div>
+              </div>
+            </div>
+          )
+        })}
+      </div>
+
       <PageSection
         title="Önceki Ay Karşılaştırma"
         description={`${previousLabel} ve ${currentLabel} karşılaştırması`}
@@ -282,8 +344,8 @@ export function MonthlyComparisonTab() {
             </div>
 
             <div className="relative flex-1">
-              <div className="absolute top-4 bottom-12 left-2 w-px bg-[#707070]" />
-              <div className="absolute right-0 bottom-12 left-2 h-px bg-[#707070]" />
+              <div className="absolute top-4 bottom-12 left-2 w-px bg-border" />
+              <div className="absolute right-0 bottom-12 left-2 h-px bg-border" />
               <ResponsiveBar
                 data={chartData}
                 keys={['previous', 'current']}
@@ -318,16 +380,16 @@ export function MonthlyComparisonTab() {
                   const legendLabel = isPrevious ? previousLabel : currentLabel
 
                   return (
-                    <div className="rounded-lg border border-border/80 bg-white px-3 py-2 text-xs shadow-md">
+                    <div className="rounded-md border border-border bg-surface px-3 py-2 font-mono text-[11px] shadow-md">
                       <p className="mb-1 font-semibold text-foreground">{row.metric}</p>
                       <p className="inline-flex items-center gap-2 text-muted-foreground">
-                        <span className="h-2.5 w-2.5 rounded-full" style={{ backgroundColor: String(color) }} />
+                        <span className="h-2 w-2 rounded-full" style={{ backgroundColor: String(color) }} />
                         {legendLabel}
                       </p>
-                      <p className="font-semibold text-foreground">
+                      <p className="font-semibold text-foreground tabular">
                         {formatComparisonValue(rawValue, row.valueType)}
                       </p>
-                      <p className="text-muted-foreground">{formatPercent(shareValue)}</p>
+                      <p className="text-muted-foreground tabular">{formatPercent(shareValue)}</p>
                     </div>
                   )
                 }}
