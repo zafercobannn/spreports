@@ -1,6 +1,7 @@
 import { ChartContainer } from '@/components/charts/ChartContainer'
 import { ResponsiveBar } from '@nivo/bar'
 import { dashboardChartTheme } from '@/components/charts/chart-theme'
+import { formatNumber } from '@/utils/format'
 import type { MonthlyGPV } from '@/types/gpv'
 
 interface LiveDistributionChartProps {
@@ -19,32 +20,31 @@ export function LiveDistributionChart({ data }: LiveDistributionChartProps) {
   const yMax = Math.ceil(maxValue * 1.1)
 
   return (
-    <ChartContainer title="Live Dağılımı" height={320}>
+    <ChartContainer title="Live Dağılımı" subtitle="Aylık live, canlı SP ve premium onboarding karşılaştırması" height={300}>
       <ResponsiveBar
         data={chartData}
         keys={['adet']}
         indexBy="kategori"
-        margin={{ top: 16, right: 24, bottom: 56, left: 64 }}
-        padding={0.35}
+        margin={{ top: 12, right: 16, bottom: 44, left: 56 }}
+        padding={0.4}
         valueScale={{ type: 'linear', min: 0, max: yMax }}
-        colors={['#f28a74']}
-        borderRadius={6}
+        colors={['#3d8d86']}
+        borderRadius={3}
         enableLabel
         labelSkipWidth={0}
         labelSkipHeight={0}
-        label={(d) => Number(d.value).toLocaleString('tr-TR')}
-        labelTextColor="#2a3f47"
+        label={(d) => formatNumber(Number(d.value))}
+        labelTextColor="var(--color-foreground)"
         axisTop={null}
         axisRight={null}
-        axisBottom={{
-          tickSize: 0,
-          tickPadding: 12,
-        }}
+        axisBottom={{ tickSize: 0, tickPadding: 10 }}
         axisLeft={{
           tickSize: 0,
-          tickPadding: 10,
-          format: (value) => Number(value).toLocaleString('tr-TR'),
+          tickPadding: 8,
+          format: (value) => formatNumber(Number(value)),
         }}
+        enableGridY
+        gridYValues={5}
         theme={dashboardChartTheme}
         animate
         motionConfig="gentle"

@@ -1,43 +1,65 @@
+// Linear-vibe chart theme. Uses CSS variables so it auto-swaps with [data-theme="dark"].
 export const dashboardChartTheme = {
   text: {
-    fontFamily: '"Space Grotesk", "Segoe UI", sans-serif',
+    fontFamily: '"Inter", system-ui, sans-serif',
     fontSize: 12,
-    fill: '#5a7480',
+    fill: 'var(--color-muted-foreground)',
   },
   axis: {
+    domain: {
+      line: { stroke: 'var(--color-border)', strokeWidth: 1 },
+    },
     ticks: {
-      text: { fontSize: 11, fill: '#5a7480' },
-      line: { stroke: '#c9dbe1' },
+      text: {
+        fontSize: 10,
+        fill: 'var(--color-muted-foreground)',
+        fontFamily: '"JetBrains Mono", ui-monospace, monospace',
+      },
+      line: { stroke: 'var(--color-border)' },
     },
     legend: {
-      text: { fontSize: 12, fontWeight: 600, fill: '#173039' },
+      text: {
+        fontSize: 11,
+        fontWeight: 600,
+        fill: 'var(--color-foreground)',
+      },
     },
   },
   grid: {
-    line: { stroke: '#e4eff2', strokeWidth: 1 },
+    line: { stroke: 'var(--color-border)', strokeDasharray: '2 4', strokeWidth: 1 },
+  },
+  legends: {
+    text: { fontSize: 11, fill: 'var(--color-muted-foreground)' },
   },
   tooltip: {
     container: {
-      background: '#ffffff',
-      border: '1px solid #c9dbe1',
-      borderRadius: '12px',
+      background: 'var(--color-surface)',
+      border: '1px solid var(--color-border)',
+      borderRadius: '8px',
       padding: '8px 12px',
-      fontSize: '12px',
-      boxShadow: '0 14px 28px -20px rgb(23 48 57 / 0.6)',
+      fontSize: '11px',
+      fontFamily: '"JetBrains Mono", ui-monospace, monospace',
+      color: 'var(--color-foreground)',
+      boxShadow: '0 8px 24px -12px rgba(0,0,0,0.15)',
     },
   },
   labels: {
-    text: { fontSize: 11, fontWeight: 600 },
+    text: { fontSize: 10, fontWeight: 600, fill: 'var(--color-foreground)' },
   },
 }
 
+// Hardcoded fallbacks (for places where CSS var isn't supported, e.g. arrays)
 export const chartColors = {
-  primary: ['#2a6373', '#3d8d86', '#77bc8a', '#9bcf9f', '#b7ddbc'],
-  comparison: ['#2a6373', '#7997a3'],
-  segments: ['#3d8d86', '#2a6373', '#77bc8a', '#f0ae57', '#db6f6f'],
-  performance: ['#3d8d86', '#f0ae57', '#db6f6f'],
+  primary: ['#3d8d86', '#71b5af', '#9bcf9f', '#b7ddbc', '#c8e3cb'],
+  comparison: ['#9aa3a8', '#3d8d86'],
+  segments: ['#3d8d86', '#71b5af', '#9bcf9f', '#e0ff40', '#c14557'],
+  performance: ['#3d8d86', '#e0ff40', '#c14557'],
   heatmap: [
-    '#eff8f7', '#d8ece9', '#bfdfda', '#9dcec5',
-    '#75b9ac', '#509f91', '#2d7f77', '#20635d', '#184d49',
+    '#fafff0', '#f0ffaa', '#e6ff80', '#deff5c',
+    '#d2f547', '#bce035', '#a8c428', '#7d971c', '#4f5d10',
+  ],
+  heatmapDark: [
+    '#16161c', '#1d2018', '#252a14', '#303716',
+    '#404a18', '#52601a', '#677920', '#7d9326', '#a8c428',
   ],
 }

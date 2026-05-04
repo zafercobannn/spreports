@@ -1,7 +1,5 @@
-import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card'
-import { Badge } from '@/components/ui/badge'
-import { formatCurrency } from '@/utils/format'
 import { Trophy } from 'lucide-react'
+import { formatCompactCurrency } from '@/utils/format'
 import type { CohortRow } from '@/types/cohort'
 
 interface CohortTopFirmsProps {
@@ -12,31 +10,50 @@ export function CohortTopFirms({ rows }: CohortTopFirmsProps) {
   return (
     <div className="grid grid-cols-1 gap-4 md:grid-cols-2 lg:grid-cols-3">
       {rows.map((row) => (
-        <Card key={row.goLiveMonth}>
-          <CardHeader className="pb-2">
-            <CardTitle className="flex items-center gap-2 text-sm">
-              <Trophy className="h-4 w-4 text-yellow-500" />
-              {row.goLiveMonth} ({row.firmCount} firma)
-            </CardTitle>
-          </CardHeader>
-          <CardContent>
-            <div className="space-y-2">
-              {row.topFirms.slice(0, 3).map((firm, idx) => (
-                <div key={firm.name} className="flex items-center justify-between">
-                  <div className="flex items-center gap-2">
-                    <Badge variant="secondary" className="h-5 w-5 items-center justify-center rounded-full p-0 text-xs">
+        <div key={row.goLiveMonth} className="bento-card p-5">
+          <div className="mb-4 flex items-center justify-between">
+            <span className="rounded-full bg-foreground/10 px-2.5 py-1 text-[10px] font-semibold uppercase tracking-[0.16em] text-foreground/70">
+              {row.goLiveMonth}
+            </span>
+            <span className="inline-flex items-center gap-1.5 font-mono tabular text-[11px] text-muted-foreground">
+              <Trophy className="h-3 w-3 text-[var(--color-accent-text)]" />
+              {row.firmCount} firma
+            </span>
+          </div>
+          <ul className="space-y-2.5">
+            {row.topFirms.slice(0, 3).map((firm, idx) => {
+              const isFirst = idx === 0
+              return (
+                <li
+                  key={firm.name}
+                  className={
+                    'flex items-center justify-between gap-3 rounded-xl px-3 py-2 ' +
+                    (isFirst
+                      ? 'bg-[var(--color-accent-soft)] text-foreground'
+                      : 'bg-surface-muted/50 text-foreground')
+                  }
+                >
+                  <div className="flex min-w-0 items-center gap-2.5">
+                    <span
+                      className={
+                        'flex h-6 w-6 shrink-0 items-center justify-center rounded-md font-mono text-[10px] font-semibold ' +
+                        (isFirst
+                          ? 'bg-foreground text-background'
+                          : 'bg-surface text-foreground border border-border')
+                      }
+                    >
                       {idx + 1}
-                    </Badge>
-                    <span className="text-sm font-medium">{firm.name}</span>
+                    </span>
+                    <span className="truncate text-[13px] font-medium">{firm.name}</span>
                   </div>
-                  <span className="text-sm text-muted-foreground">
-                    {formatCurrency(firm.gpv)}
+                  <span className="shrink-0 font-mono tabular text-[12px] text-muted-foreground">
+                    {formatCompactCurrency(firm.gpv)}
                   </span>
-                </div>
-              ))}
-            </div>
-          </CardContent>
-        </Card>
+                </li>
+              )
+            })}
+          </ul>
+        </div>
       ))}
     </div>
   )

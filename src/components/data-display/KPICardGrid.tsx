@@ -13,6 +13,6 @@ export function KPICardGrid({ columns = 4, className, ...props }: KPICardGridPro
   }
 
   return (
-    <div className={cn('grid gap-4', gridCols[columns], className)} {...props} />
+    <div className={cn('grid gap-2.5', gridCols[columns], className)} {...props} />
   )
 }

@@ -9,7 +9,7 @@ export function TabsList({ className, ...props }: HTMLAttributes<HTMLDivElement>
   return (
     <div
       className={cn(
-        'inline-flex min-h-12 items-center justify-center rounded-2xl border border-border/70 bg-white/70 p-1.5 text-muted-foreground backdrop-blur-sm',
+        'flex items-center gap-0.5 overflow-x-auto border-b border-border px-7 pb-2.5 pt-4',
         className,
       )}
       {...props}
@@ -25,10 +25,10 @@ export function TabsTrigger({ className, active, ...props }: TabsTriggerProps) {
   return (
     <button
       className={cn(
-        'inline-flex items-center justify-center whitespace-nowrap rounded-xl px-3.5 py-2 text-sm font-medium ring-offset-background transition-all duration-200 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2',
+        'inline-flex items-center gap-1.5 whitespace-nowrap rounded-md border px-2.5 py-1.5 text-[12.5px] transition-all duration-150 focus-visible:outline-none focus-visible:ring-1 focus-visible:ring-ring/40',
         active
-          ? 'bg-white text-foreground shadow-[0_8px_20px_-14px_rgba(23,48,57,0.85)]'
-          : 'text-muted-foreground hover:bg-white/70 hover:text-foreground',
+          ? 'border-border bg-surface text-foreground font-medium shadow-[0_1px_0_rgba(0,0,0,0.02),0_1px_2px_rgba(0,0,0,0.04)] dark:shadow-[inset_0_1px_0_rgba(255,255,255,0.04),0_1px_2px_rgba(0,0,0,0.4)]'
+          : 'border-transparent bg-transparent text-muted-foreground hover:text-foreground',
         className,
       )}
       {...props}
@@ -39,10 +39,7 @@ export function TabsTrigger({ className, active, ...props }: TabsTriggerProps) {
 export function TabsContent({ className, ...props }: HTMLAttributes<HTMLDivElement>) {
   return (
     <div
-      className={cn(
-        'mt-5 ring-offset-background focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2',
-        className,
-      )}
+      className={cn('px-7 pb-10 pt-5 ring-offset-background focus-visible:outline-none', className)}
       {...props}
     />
   )

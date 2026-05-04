@@ -22,7 +22,7 @@ interface DataTableProps<T> {
 export function DataTable<T extends Record<string, any>>({
   data,
   columns,
-  emptyMessage = 'Veri bulunamadi',
+  emptyMessage = 'Veri bulunamadı',
 }: DataTableProps<T>) {
   const [sortKey, setSortKey] = useState<string | null>(null)
   const [sortDir, setSortDir] = useState<'asc' | 'desc'>('asc')
@@ -53,71 +53,72 @@ export function DataTable<T extends Record<string, any>>({
 
   if (data.length === 0) {
     return (
-      <div className="flex items-center justify-center py-12 text-muted-foreground">
+      <div className="lin-section flex items-center justify-center py-12 text-[12px] text-muted-foreground">
         {emptyMessage}
       </div>
     )
   }
 
   return (
-    <div className="overflow-x-auto rounded-2xl border border-white/80 bg-white/70 shadow-[0_14px_34px_-30px_rgba(23,48,57,0.85)] backdrop-blur-sm">
-      <table className="w-full text-sm">
-        <thead>
-          <tr className="border-b border-border/70 bg-gradient-to-r from-white/90 to-white/45">
-            {columns.map((col) => {
-              const hasIkasHeader = /\bikas\b/i.test(col.header)
-              return (
-                <th
-                  key={col.key}
-                  className={cn(
-                    'px-4 py-3 text-xs font-semibold tracking-[0.08em] text-muted-foreground',
-                    hasIkasHeader ? 'normal-case' : 'uppercase',
-                    col.align === 'right' && 'text-right',
-                    col.align === 'center' && 'text-center',
-                    col.sortable && 'cursor-pointer select-none hover:text-foreground',
-                  )}
-                  style={col.width ? { width: col.width } : undefined}
-                  onClick={col.sortable ? () => handleSort(col.key) : undefined}
-                >
-                  <span className="inline-flex items-center gap-1">
-                    {col.header}
-                    {col.sortable && (
-                      sortKey === col.key ? (
-                        sortDir === 'asc' ? <ArrowUp className="h-3 w-3" /> : <ArrowDown className="h-3 w-3" />
-                      ) : (
-                        <ArrowUpDown className="h-3 w-3 opacity-40" />
-                      )
+    <div className="lin-section overflow-hidden">
+      <div className="overflow-x-auto">
+        <table className="w-full border-collapse text-[12.5px]">
+          <thead className="bg-surface-muted">
+            <tr>
+              {columns.map((col) => {
+                return (
+                  <th
+                    key={col.key}
+                    className={cn(
+                      'border-b border-border px-3.5 py-2.5 text-[10px] font-semibold uppercase tracking-[0.04em] text-muted-foreground',
+                      col.align === 'right' ? 'text-right' : col.align === 'center' ? 'text-center' : 'text-left',
+                      col.sortable && 'cursor-pointer select-none hover:text-foreground',
                     )}
-                  </span>
-                </th>
-              )
-            })}
-          </tr>
-        </thead>
-        <tbody>
-          {sortedData.map((row, idx) => (
-            <tr
-              key={idx}
-              className="border-b border-border/60 transition-colors hover:bg-white/55 last:border-0"
-            >
-              {columns.map((col) => (
-                <td
-                  key={col.key}
-                  className={cn(
-                    'px-4 py-3.5',
-                    col.align === 'right' && 'text-right',
-                    col.align === 'center' && 'text-center',
-                  )}
-                >
-                  {col.render
-                    ? col.render(row, idx)
-                    : String(row[col.key] ?? '')}
-                </td>
-              ))}
+                    style={col.width ? { width: col.width } : undefined}
+                    onClick={col.sortable ? () => handleSort(col.key) : undefined}
+                  >
+                    <span className={cn('inline-flex items-center gap-1', col.align === 'right' && 'justify-end w-full')}>
+                      {col.header}
+                      {col.sortable && (
+                        sortKey === col.key ? (
+                          sortDir === 'asc'
+                            ? <ArrowUp className="h-3 w-3" />
+                            : <ArrowDown className="h-3 w-3" />
+                        ) : (
+                          <ArrowUpDown className="h-3 w-3 opacity-40" />
+                        )
+                      )}
+                    </span>
+                  </th>
+                )
+              })}
             </tr>
-          ))}
-        </tbody>
-      </table>
+          </thead>
+          <tbody>
+            {sortedData.map((row, idx) => (
+              <tr
+                key={idx}
+                className="lin-row border-b border-border last:border-0"
+              >
+                {columns.map((col) => (
+                  <td
+                    key={col.key}
+                    className={cn(
+                      'px-3.5 py-2.5',
+                      col.align === 'right' && 'text-right tabular font-mono',
+                      col.align === 'center' && 'text-center',
+                    )}
+                  >
+                    {col.render
+                      ? col.render(row, idx)
+                      : String(row[col.key] ?? '')}
+                  </td>
+                ))}
+              </tr>
+            ))}
+          </tbody>
+        </table>
+      </div>
     </div>
   )
 }

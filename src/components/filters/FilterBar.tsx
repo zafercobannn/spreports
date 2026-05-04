@@ -1,3 +1,4 @@
+import { Calendar, ChevronDown } from 'lucide-react'
 import { MonthSelector } from './MonthSelector'
 import { YearSelector } from './YearSelector'
 import { useFilterStore } from '@/stores/filter-store'
@@ -6,15 +7,17 @@ export function FilterBar() {
   const { year, month, setYear, setMonth } = useFilterStore()
 
   return (
-    <div className="flex flex-wrap items-center gap-3 sm:gap-4">
-      <div className="flex items-center gap-2 rounded-xl border border-white/70 bg-white/55 px-3 py-2">
-        <span className="text-xs font-semibold tracking-[0.08em] text-muted-foreground uppercase">Yıl</span>
+    <div className="flex items-center gap-1.5">
+      <label className="flex h-8 items-center gap-1.5 rounded-md border border-border bg-surface px-2.5 text-[12px] text-muted-foreground transition-colors hover:bg-hover">
+        <Calendar className="h-3 w-3" />
         <YearSelector value={year} onChange={setYear} />
-      </div>
-      <div className="flex items-center gap-2 rounded-xl border border-white/70 bg-white/55 px-3 py-2">
-        <span className="text-xs font-semibold tracking-[0.08em] text-muted-foreground uppercase">Ay</span>
+        <ChevronDown className="h-3 w-3 text-subtle" />
+      </label>
+      <label className="flex h-8 items-center gap-1.5 rounded-md border border-border bg-surface px-2.5 text-[12px] text-muted-foreground transition-colors hover:bg-hover">
+        <Calendar className="h-3 w-3" />
         <MonthSelector value={month} onChange={setMonth} />
-      </div>
+        <ChevronDown className="h-3 w-3 text-subtle" />
+      </label>
     </div>
   )
 }

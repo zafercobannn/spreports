@@ -29,12 +29,12 @@ export function YearSelector({ value, onChange }: YearSelectorProps) {
 
   return (
     <select
-      className="h-9 min-w-28 rounded-full border border-border/70 bg-white/80 px-3 text-sm font-medium text-foreground outline-none transition focus:border-primary/50 focus:ring-2 focus:ring-primary/20"
+      className="cursor-pointer appearance-none bg-transparent font-mono text-[12px] font-medium text-foreground outline-none"
       value={value}
       onChange={(e) => onChange(Number(e.target.value))}
     >
       {years.map((year) => (
-        <option key={year} value={year}>
+        <option key={year} value={year} className="bg-surface text-foreground">
           {year}
         </option>
       ))}

@@ -1,4 +1,3 @@
-import { Card, CardContent, CardHeader, CardTitle, CardDescription } from '@/components/ui/card'
 import { Skeleton } from '@/components/ui/skeleton'
 import { EmptyState } from '@/components/data-display/EmptyState'
 import { cn } from '@/lib/utils'
@@ -28,22 +27,28 @@ export function ChartContainer({
   className,
 }: ChartContainerProps) {
   return (
-    <Card className={cn(className)}>
+    <div className={cn('bento-card', className)}>
       {(title || actions) && (
-        <CardHeader className="flex flex-row items-center justify-between pb-2">
+        <div className="flex items-start justify-between gap-3 px-6 pt-5 pb-3">
           <div>
-            {title && <CardTitle className="text-sm font-medium">{title}</CardTitle>}
-            {subtitle && <CardDescription>{subtitle}</CardDescription>}
+            {title && (
+              <span className="rounded-full bg-foreground/10 px-2.5 py-1 text-[10px] font-semibold uppercase tracking-[0.16em] text-foreground/70">
+                {title}
+              </span>
+            )}
+            {subtitle && (
+              <p className="mt-2 text-[12px] text-muted-foreground">{subtitle}</p>
+            )}
           </div>
           {actions}
-        </CardHeader>
+        </div>
       )}
-      <CardContent>
+      <div className="px-6 pb-6">
         <div style={{ height }}>
           {isLoading ? (
             <Skeleton className="h-full w-full" />
           ) : error ? (
-            <div className="flex h-full items-center justify-center text-sm text-destructive">
+            <div className="flex h-full items-center justify-center text-[12px] text-[var(--color-danger)]">
               Veri yüklenirken hata oluştu
             </div>
           ) : isEmpty ? (
@@ -52,7 +57,7 @@ export function ChartContainer({
             children
           )}
         </div>
-      </CardContent>
-    </Card>
+      </div>
+    </div>
   )
 }

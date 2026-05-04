@@ -24,8 +24,8 @@ export function TrendIndicator({
         ? direction === 'up'
         : direction === 'down'
 
-  const iconSize = size === 'sm' ? 'h-3 w-3' : 'h-4 w-4'
-  const textSize = size === 'sm' ? 'text-xs' : 'text-sm'
+  const iconSize = size === 'sm' ? 'h-3 w-3' : 'h-3.5 w-3.5'
+  const textSize = size === 'sm' ? 'text-[11px]' : 'text-[12px]'
 
   const Icon =
     direction === 'up'
@@ -43,9 +43,9 @@ export function TrendIndicator({
   return (
     <span
       className={cn(
-        'inline-flex items-center gap-1 font-medium',
+        'inline-flex items-center gap-1 font-mono tabular font-medium',
         textSize,
-        isGood ? 'text-green-600' : 'text-red-600',
+        isGood ? 'text-[var(--color-success)]' : 'text-[var(--color-danger)]',
         direction === 'flat' && 'text-muted-foreground',
       )}
     >
