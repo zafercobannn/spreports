@@ -30,7 +30,11 @@ export function TeamPerformanceTab() {
         </div>
       </PageSection>
 
-      <PageSection title="Temsilci Karşılaştırma" description="İki temsilciyi seçilen dönem aralığında karşılaştır">
+      <PageSection
+        id="rep-compare-section"
+        title="Temsilci Karşılaştırma"
+        description="İki temsilciyi seçilen dönem aralığında karşılaştır"
+      >
         <RepCompareTab />
       </PageSection>
     </div>

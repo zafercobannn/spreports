@@ -1,5 +1,5 @@
 import { Link } from 'react-router-dom'
-import { Bell, LogOut, Moon, Presentation, Settings, Sun } from 'lucide-react'
+import { Bell, GitCompareArrows, LogOut, Moon, Presentation, Settings, Sun } from 'lucide-react'
 import { Button } from '@/components/ui/button'
 import { FilterBar } from '@/components/filters/FilterBar'
 import { useTheme } from '@/hooks/use-theme'
@@ -137,6 +137,21 @@ export function DashboardHeader({
 
         <div className="flex flex-wrap items-center gap-2">
           <FilterBar />
+          {activeTab === 'team' && (
+            <Button
+              variant="secondary"
+              size="default"
+              className="rounded-full"
+              onClick={() => {
+                document
+                  .getElementById('rep-compare-section')
+                  ?.scrollIntoView({ behavior: 'smooth', block: 'start' })
+              }}
+            >
+              <GitCompareArrows className="h-4 w-4" />
+              Karşılaştır
+            </Button>
+          )}
           <Button size="default" className="rounded-full" onClick={() => onPresentationMode('slideshow')}>
             <Presentation className="h-4 w-4" />
             Sunum
