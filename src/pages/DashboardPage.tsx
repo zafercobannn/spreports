@@ -2,6 +2,7 @@ import { useState } from 'react'
 import { DashboardLayout } from '@/components/layout/DashboardLayout'
 import { DashboardHeader } from '@/components/layout/DashboardHeader'
 import { useAdminAuth } from '@/features/auth/AdminAuthProvider'
+import { DashboardLockScreen } from '@/features/auth/DashboardLockScreen'
 import { MonthlyOverviewTab } from '@/features/monthly-overview/MonthlyOverviewTab'
 import { MonthlyComparisonTab } from '@/features/monthly-comparison/MonthlyComparisonTab'
 import { CohortTab } from '@/features/cohort/CohortTab'
@@ -51,5 +52,11 @@ function DashboardWorkspace() {
 }
 
 export function DashboardPage() {
+  const { isAdmin } = useAdminAuth()
+
+  if (!isAdmin) {
+    return <DashboardLockScreen />
+  }
+
   return <DashboardWorkspace />
 }

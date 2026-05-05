@@ -2,8 +2,9 @@ import { initializeApp, getApps, getApp } from 'firebase/app'
 import { getAnalytics, isSupported, type Analytics } from 'firebase/analytics'
 import {
   getAuth,
+  GoogleAuthProvider,
   onAuthStateChanged,
-  signInWithEmailAndPassword,
+  signInWithPopup,
   signOut,
   type Auth,
   type User,
@@ -44,7 +45,7 @@ const missingFirebaseConfigKeys = Object.entries(requiredFields)
   .map(([key]) => key)
 
 const syncFlag = import.meta.env.VITE_ENABLE_FIREBASE_SYNC !== 'false'
-const fallbackAdminEmails = ['hilal.mingin@ikas.com']
+const fallbackAdminEmails = ['hilal.mingin@ikas.com', 'mali.sungur@ikas.com']
 const adminEmailSet = new Set(
   [...fallbackAdminEmails, ...readEnv('VITE_FIREBASE_ADMIN_EMAILS').split(',')]
     .map(normalizeEmail)
@@ -131,13 +132,16 @@ export function observeFirebaseAuthState(callback: (user: User | null) => void) 
   return onAuthStateChanged(getFirebaseAuthInstance(), callback)
 }
 
-export async function signInWithFirebaseEmail(email: string, password: string): Promise<User> {
+export async function signInWithGoogle(): Promise<User> {
   const auth = getFirebaseAuthInstance()
-  const credential = await signInWithEmailAndPassword(auth, normalizeEmail(email), password)
+  const provider = new GoogleAuthProvider()
+  provider.setCustomParameters({ prompt: 'select_account' })
+
+  const credential = await signInWithPopup(auth, provider)
 
   if (!isFirebaseAdminEmail(credential.user.email)) {
     await signOut(auth)
-    throw new Error('Bu hesap admin erişimine sahip değil.')
+    throw new Error('Bu hesap erişim yetkisine sahip değil.')
   }
 
   return credential.user

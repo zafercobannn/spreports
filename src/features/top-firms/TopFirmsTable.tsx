@@ -85,6 +85,12 @@ export function TopFirmsTable({ data }: TopFirmsTableProps) {
       ),
     },
     {
+      key: 'usesPars',
+      header: 'Pars',
+      align: 'center',
+      render: (row) => renderUsageBadge(row.usesPars),
+    },
+    {
       key: 'usesPwi',
       header: 'PWI',
       align: 'center',

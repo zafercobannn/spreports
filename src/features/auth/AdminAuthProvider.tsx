@@ -4,7 +4,7 @@ import {
   firebasePrimaryAdminEmail,
   isFirebaseAdminEmail,
   observeFirebaseAuthState,
-  signInWithFirebaseEmail,
+  signInWithGoogle,
   signOutFirebaseUser,
 } from '@/lib/firebase/firebase-app'
 import { useDashboardDataStore } from '@/stores/dashboard-data-store'
@@ -15,7 +15,7 @@ interface AdminAuthContextValue {
   isLoading: boolean
   isAdmin: boolean
   primaryAdminEmail: string
-  signIn: (email: string, password: string) => Promise<void>
+  signIn: () => Promise<void>
   signOut: () => Promise<void>
 }
 
@@ -42,8 +42,8 @@ export function AdminAuthProvider({ children }: { children: ReactNode }) {
         isLoading,
         isAdmin: isFirebaseAdminEmail(user?.email),
         primaryAdminEmail: firebasePrimaryAdminEmail,
-        signIn: async (email, password) => {
-          await signInWithFirebaseEmail(email, password)
+        signIn: async () => {
+          await signInWithGoogle()
         },
         signOut: async () => {
           await signOutFirebaseUser()

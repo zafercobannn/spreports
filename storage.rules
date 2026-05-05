@@ -8,11 +8,11 @@ service firebase.storage {
     function isAdmin() {
       return isSignedIn()
         && request.auth.token.email != null
-        && request.auth.token.email in ['hilal.mingin@ikas.com'];
+        && request.auth.token.email in ['hilal.mingin@ikas.com', 'mali.sungur@ikas.com'];
     }
 
     match /representative-images/{representativeId}/{fileName} {
-      allow read: if true;
+      allow read: if isAdmin();
       allow create, update: if isAdmin()
         && request.resource != null
         && request.resource.size < 5 * 1024 * 1024
