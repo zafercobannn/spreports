@@ -1,6 +1,6 @@
 import { create } from 'zustand'
 import { createJSONStorage, persist } from 'zustand/middleware'
-import { getCurrentMonth, getCurrentYear } from '@/utils/date-utils'
+import { getPreviousMonthAndYear } from '@/utils/date-utils'
 
 interface FilterState {
   year: number
@@ -15,16 +15,15 @@ interface FilterState {
   resetFilters: () => void
 }
 
-const currentYear = getCurrentYear()
-const currentMonth = getCurrentMonth()
-const FILTER_STORAGE_KEY = 'spreports-filters-v1'
+const { month: defaultMonth, year: defaultYear } = getPreviousMonthAndYear()
+const FILTER_STORAGE_KEY = 'spreports-filters-v2'
 
 export const useFilterStore = create<FilterState>()(
   persist(
     (set) => ({
-      year: currentYear,
-      month: currentMonth,
-      comparisonYear: currentYear - 1,
+      year: defaultYear,
+      month: defaultMonth,
+      comparisonYear: defaultYear - 1,
       selectedTeamMemberId: null,
 
       setYear: (year) => set({ year, comparisonYear: year - 1 }),
@@ -33,9 +32,9 @@ export const useFilterStore = create<FilterState>()(
       setTeamMember: (id) => set({ selectedTeamMemberId: id }),
       resetFilters: () =>
         set({
-          year: currentYear,
-          month: currentMonth,
-          comparisonYear: currentYear - 1,
+          year: defaultYear,
+          month: defaultMonth,
+          comparisonYear: defaultYear - 1,
           selectedTeamMemberId: null,
         }),
     }),

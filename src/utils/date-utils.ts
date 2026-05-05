@@ -26,6 +26,16 @@ export function getCurrentYear(): number {
   return new Date().getFullYear()
 }
 
+export function getPreviousMonthAndYear(): { month: number; year: number } {
+  const now = new Date()
+  const month = now.getMonth() + 1
+  const year = now.getFullYear()
+  if (month === 1) {
+    return { month: 12, year: year - 1 }
+  }
+  return { month: month - 1, year }
+}
+
 export function getMonthRange(startMonth: number, endMonth: number): number[] {
   const months: number[] = []
   for (let m = startMonth; m <= endMonth; m++) {
