@@ -151,7 +151,7 @@ function createShareLabelLayer(): (props: BarCustomLayerProps<ComparisonBarDatum
             textAnchor="middle"
             fontSize={11}
             fontWeight={600}
-            fill={isPrevious ? '#ffffff' : '#ffffff'}
+            fill={isPrevious ? '#ffffff' : 'var(--color-foreground)'}
           >
             {formatPercent(shareValue)}
           </text>

@@ -1,5 +1,5 @@
 import { useState } from 'react'
-import { Link } from 'react-router-dom'
+import { Link, useNavigate } from 'react-router-dom'
 import { ArrowLeft, LockKeyhole, LogOut } from 'lucide-react'
 import { Badge } from '@/components/ui/badge'
 import { Button } from '@/components/ui/button'
@@ -9,6 +9,7 @@ import { useAdminAuth } from './AdminAuthProvider'
 
 export function AdminLoginExperience() {
   const { isLoading, signIn, signOut, userEmail } = useAdminAuth()
+  const navigate = useNavigate()
   const [isSubmitting, setIsSubmitting] = useState(false)
   const [error, setError] = useState<string | null>(null)
 
@@ -34,6 +35,7 @@ export function AdminLoginExperience() {
 
     try {
       await signIn()
+      navigate('/dashboard', { replace: true })
     } catch (submitError) {
       const message = submitError instanceof Error ? submitError.message : 'Giriş işlemi tamamlanamadı.'
       setError(message)
