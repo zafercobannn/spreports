@@ -41,21 +41,14 @@ function parseSmartNumber(raw: string): number {
   return parsed * multiplier
 }
 
+// Yuvarlamadan, kısaltılmış biçimde 2 ondalık gösterir (örn. 20,17M).
 function formatCompact(value: number): string {
   if (value === 0) return '0'
-  if (Math.abs(value) >= 1_000_000_000) {
-    const compact = value / 1_000_000_000
-    return Number.isInteger(compact) ? `${compact}B` : `${compact.toFixed(1)}B`
-  }
-  if (Math.abs(value) >= 1_000_000) {
-    const compact = value / 1_000_000
-    return Number.isInteger(compact) ? `${compact}M` : `${compact.toFixed(1)}M`
-  }
-  if (Math.abs(value) >= 1_000) {
-    const compact = value / 1_000
-    return Number.isInteger(compact) ? `${compact}K` : `${compact.toFixed(1)}K`
-  }
-  return String(value)
+  const abs = Math.abs(value)
+  if (abs >= 1_000_000_000) return `${(value / 1_000_000_000).toFixed(2).replace('.', ',')}B`
+  if (abs >= 1_000_000) return `${(value / 1_000_000).toFixed(2).replace('.', ',')}M`
+  if (abs >= 1_000) return `${(value / 1_000).toFixed(2).replace('.', ',')}K`
+  return value.toLocaleString('tr-TR', { maximumFractionDigits: 2 })
 }
 
 function toNumber(value: string): number {

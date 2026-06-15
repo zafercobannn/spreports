@@ -1,10 +1,18 @@
 import { ChartContainer } from '@/components/charts/ChartContainer'
 import { HeatmapChart } from '@/components/charts/HeatmapChart'
-import { formatCompactNumber } from '@/utils/format'
 import type { CohortMatrix } from '@/types/cohort'
 
 interface CohortHeatmapProps {
   data: CohortMatrix
+}
+
+// Yuvarlamadan, kısaltılmış biçimde 2 ondalık gösterir (örn. 20,17M).
+function formatCohortCompact(value: number): string {
+  const abs = Math.abs(value)
+  if (abs >= 1_000_000_000) return `${(value / 1_000_000_000).toFixed(2).replace('.', ',')}B`
+  if (abs >= 1_000_000) return `${(value / 1_000_000).toFixed(2).replace('.', ',')}M`
+  if (abs >= 1_000) return `${(value / 1_000).toFixed(2).replace('.', ',')}K`
+  return value.toLocaleString('tr-TR', { maximumFractionDigits: 2 })
 }
 
 export function CohortHeatmap({ data }: CohortHeatmapProps) {
@@ -26,7 +34,7 @@ export function CohortHeatmap({ data }: CohortHeatmapProps) {
     >
       <HeatmapChart
         data={heatmapData}
-        formatValue={(v) => formatCompactNumber(v)}
+        formatValue={(v) => formatCohortCompact(v)}
       />
     </ChartContainer>
   )
