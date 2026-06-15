@@ -12,6 +12,9 @@ import {
   isCloudPersistenceEnabled,
   loadDashboardPeriodFromCloud,
   saveDashboardPeriodToCloud,
+  loadGlobalCohortFromCloud,
+  saveGlobalCohortToCloud,
+  loadAllPeriodCohortsOrdered,
 } from '@/services/firebase/dashboard-period-service'
 
 const STORAGE_KEY = 'spreports-manual-dashboard-data-v1'
@@ -24,6 +27,9 @@ const periodEnsureTasks = new Map<string, Promise<void>>()
 const periodLocalVersions = new Map<string, number>()
 const hydratedPeriodKeys = new Set<string>()
 let localToCloudMigrationTask: Promise<void> | null = null
+let cohortEnsureTask: Promise<void> | null = null
+let cohortLoadedThisSession = false
+let globalCohortSaveTimer: ReturnType<typeof setTimeout> | null = null
 
 export type CloudSyncStatus = 'idle' | 'queued' | 'saving' | 'success' | 'error'
 
@@ -280,13 +286,19 @@ function getMonthYearLabel(year: number, month: number): string {
     .trim()
 }
 
-function getMonthNameFromLabel(label: string): string | null {
-  const normalizedLabel = normalizeLabel(label)
-  return TURKISH_MONTHS.find((monthName) => {
-    const normalizedMonth = normalizeLabel(monthName)
-    const shortToken = normalizedMonth.slice(0, 3)
-    return normalizedLabel.includes(normalizedMonth) || normalizedLabel.includes(shortToken)
-  }) ?? null
+// Cohort etiketlerini ("Kas 2025") kanonik "2025-11" anahtarına çevirir.
+// Yıl + ay birlikte eşleştiğinden farklı yılların aynı ayı karışmaz.
+const SHORT_MONTH_KEYS = TURKISH_MONTHS.map((name) => normalizeLabel(name).slice(0, 3))
+
+function parseCohortLabelToKey(label: string): string | null {
+  if (typeof label !== 'string') return null
+  const yearMatch = label.match(/(\d{4})/)
+  if (!yearMatch) return null
+  const year = Number(yearMatch[1])
+  const token = normalizeLabel(label).replace(/[0-9]/g, '').slice(0, 3)
+  const monthIdx = SHORT_MONTH_KEYS.indexOf(token)
+  if (monthIdx < 0 || !Number.isFinite(year)) return null
+  return getPeriodKey(year, monthIdx + 1)
 }
 
 function normalizeLabel(value: string): string {
@@ -356,28 +368,29 @@ function normalizeCohortForMonth(
 ): CohortMatrix {
   const window = buildRollingPeriodWindow(year, month)
   const months = window.map((item) => item.label)
-  const rowMapByLabel = new Map(
-    cohort.rows.map((row) => [normalizeLabel(row.goLiveMonth), row] as const),
-  )
-  const rowMapByMonthName = new Map<string, CohortMatrix['rows'][number]>()
 
+  // Kaynak satırları kanonik anahtara (2025-11) göre indeksle; etiket çözülemezse
+  // normalize edilmiş etiketi (yıl dâhil) yedek olarak kullan.
+  const rowByKey = new Map<string, CohortMatrix['rows'][number]>()
+  const rowByNorm = new Map<string, CohortMatrix['rows'][number]>()
   cohort.rows.forEach((row) => {
-    const monthName = getMonthNameFromLabel(row.goLiveMonth)
-    if (!monthName || rowMapByMonthName.has(monthName)) return
-    rowMapByMonthName.set(monthName, row)
+    const key = parseCohortLabelToKey(row.goLiveMonth)
+    if (key && !rowByKey.has(key)) rowByKey.set(key, row)
+    const norm = normalizeLabel(row.goLiveMonth)
+    if (!rowByNorm.has(norm)) rowByNorm.set(norm, row)
   })
 
   const rows = window.map((slot) => {
-    const sourceRow = rowMapByLabel.get(normalizeLabel(slot.label)) ?? rowMapByMonthName.get(slot.monthName)
-    const sourceCellMapByLabel = new Map(
-      (sourceRow?.cells ?? []).map((cell) => [normalizeLabel(cell.observedMonth), cell.gpvValue] as const),
-    )
-    const sourceCellMapByMonthName = new Map<string, number>()
+    const slotKey = getPeriodKey(slot.year, slot.month)
+    const sourceRow = rowByKey.get(slotKey) ?? rowByNorm.get(normalizeLabel(slot.label))
 
+    const cellByKey = new Map<string, number>()
+    const cellByNorm = new Map<string, number>()
     ;(sourceRow?.cells ?? []).forEach((cell) => {
-      const monthName = getMonthNameFromLabel(cell.observedMonth)
-      if (!monthName || sourceCellMapByMonthName.has(monthName)) return
-      sourceCellMapByMonthName.set(monthName, cell.gpvValue)
+      const key = parseCohortLabelToKey(cell.observedMonth)
+      if (key && !cellByKey.has(key)) cellByKey.set(key, cell.gpvValue)
+      const norm = normalizeLabel(cell.observedMonth)
+      if (!cellByNorm.has(norm)) cellByNorm.set(norm, cell.gpvValue)
     })
 
     return {
@@ -387,8 +400,8 @@ function normalizeCohortForMonth(
         goLiveMonth: slot.label,
         observedMonth: observedSlot.label,
         gpvValue: toNumber(
-          sourceCellMapByLabel.get(normalizeLabel(observedSlot.label))
-            ?? sourceCellMapByMonthName.get(observedSlot.monthName),
+          cellByKey.get(getPeriodKey(observedSlot.year, observedSlot.month))
+            ?? cellByNorm.get(normalizeLabel(observedSlot.label)),
           0,
         ),
       })),
@@ -429,6 +442,117 @@ function createEmptyCohortForMonth(year: number, month: number): CohortMatrix {
       ],
     })),
   }
+}
+
+function cohortKeyToLabel(key: string): string {
+  const parsed = parsePeriodKey(key)
+  if (!parsed) return key
+  return getMonthYearLabel(parsed.year, parsed.month)
+}
+
+interface CohortRowAccumulator {
+  firmCount: number
+  topFirms: { name: string; gpv: number }[]
+  cells: Map<string, number>
+}
+
+/**
+ * İki cohort matrisini kanonik (yıl-ay) anahtara göre birleştirir.
+ * `base` tamamen korunur; `incoming` üstüne yazılır. `skipZeros` true iken
+ * (migration) sıfır/boş değerler mevcut gerçek veriyi ezmez.
+ */
+function mergeCohortWindow(
+  base: CohortMatrix | null,
+  incoming: CohortMatrix,
+  options: { skipZeros: boolean },
+): CohortMatrix {
+  const rowMap = new Map<string, CohortRowAccumulator>()
+
+  const ingest = (cohort: CohortMatrix, skipZeros: boolean) => {
+    cohort.rows.forEach((row) => {
+      const goLiveKey = parseCohortLabelToKey(row.goLiveMonth)
+      if (!goLiveKey) return
+
+      let entry = rowMap.get(goLiveKey)
+      if (!entry) {
+        entry = { firmCount: 0, topFirms: [], cells: new Map() }
+        rowMap.set(goLiveKey, entry)
+      }
+
+      const firmCount = Math.max(0, toNumber(row.firmCount, 0))
+      if (!skipZeros || firmCount > 0) entry.firmCount = firmCount
+
+      const topFirms = Array.isArray(row.topFirms)
+        ? row.topFirms.map((firm) => ({
+            name: typeof firm.name === 'string' ? firm.name : '',
+            gpv: Math.max(0, toNumber(firm.gpv, 0)),
+          }))
+        : []
+      const hasTopFirmData = topFirms.some((firm) => firm.name.trim() !== '' || firm.gpv > 0)
+      if (!skipZeros || hasTopFirmData) entry.topFirms = topFirms
+
+      row.cells.forEach((cell) => {
+        const obsKey = parseCohortLabelToKey(cell.observedMonth)
+        if (!obsKey) return
+        const value = Math.max(0, toNumber(cell.gpvValue, 0))
+        if (skipZeros && value === 0) return
+        entry!.cells.set(obsKey, value)
+      })
+    })
+  }
+
+  if (base) ingest(base, false)
+  ingest(incoming, options.skipZeros)
+
+  // Hiç veri içermeyen go-live satırlarını ele (örn. önceden tohumlanmış
+  // boş gelecek dönemlerden gelenler) — global doküman şişmesin.
+  for (const [key, entry] of rowMap) {
+    const hasTopFirm = entry.topFirms.some((firm) => firm.name.trim() !== '' || firm.gpv > 0)
+    if (entry.firmCount === 0 && entry.cells.size === 0 && !hasTopFirm) {
+      rowMap.delete(key)
+    }
+  }
+
+  const monthKeySet = new Set<string>()
+  rowMap.forEach((entry) => entry.cells.forEach((_, key) => monthKeySet.add(key)))
+  const monthKeys = Array.from(monthKeySet).sort()
+  const months = monthKeys.map(cohortKeyToLabel)
+
+  const goLiveKeys = Array.from(rowMap.keys()).sort()
+  const rows = goLiveKeys.map((goLiveKey) => {
+    const entry = rowMap.get(goLiveKey)!
+    const goLiveMonth = cohortKeyToLabel(goLiveKey)
+    return {
+      goLiveMonth,
+      firmCount: entry.firmCount,
+      cells: monthKeys.map((obsKey) => ({
+        goLiveMonth,
+        observedMonth: cohortKeyToLabel(obsKey),
+        gpvValue: entry.cells.get(obsKey) ?? 0,
+      })),
+      topFirms: entry.topFirms.length > 0
+        ? entry.topFirms
+        : [
+            { name: '', gpv: 0 },
+            { name: '', gpv: 0 },
+            { name: '', gpv: 0 },
+          ],
+    }
+  })
+
+  return { months, rows }
+}
+
+/** Global cohort'tan belirli bir dönemin 6 aylık penceresini türetir. */
+export function deriveCohortWindow(
+  cohortAll: CohortMatrix | null,
+  year: number,
+  month: number,
+): CohortMatrix {
+  if (!cohortAll || !isCohortMatrix(cohortAll)) {
+    return createEmptyCohortForMonth(year, month)
+  }
+  return normalizeCohortForMonth(cohortAll, year, month)
 }
 
 function createEmptyPeriodData(year: number, month: number): DashboardPeriodData {
@@ -985,10 +1109,74 @@ function ensurePeriodRemoteFirst(
   return ensureTask
 }
 
+function scheduleGlobalCohortSave(cohort: CohortMatrix): void {
+  if (!isCloudPersistenceEnabled()) return
+  if (globalCohortSaveTimer) clearTimeout(globalCohortSaveTimer)
+  globalCohortSaveTimer = setTimeout(() => {
+    globalCohortSaveTimer = null
+    void saveGlobalCohortToCloud(cohort).catch((error) => {
+      console.error('[dashboard-data-store] Global cohort kaydı başarısız:', error)
+    })
+  }, CLOUD_SAVE_DEBOUNCE_MS)
+}
+
+/**
+ * Global cohort'u buluttan yükler. Global doküman yoksa/boşsa, mevcut dönem
+ * dokümanlarındaki cohort kopyalarını birleştirerek (migration) tek seferde
+ * inşa eder ve buluta yazar. Böylece eski aylar (örn. Kas 2025) hiçbir dönemde
+ * sıfırlanmaz.
+ */
+function ensureCohortRemoteFirst(
+  set: StoreApi<DashboardDataStore>['setState'],
+): Promise<void> {
+  if (cohortEnsureTask) return cohortEnsureTask
+  if (cohortLoadedThisSession) return Promise.resolve()
+  if (!isCloudPersistenceEnabled()) {
+    cohortLoadedThisSession = true
+    return Promise.resolve()
+  }
+
+  cohortEnsureTask = (async () => {
+    let global = await loadGlobalCohortFromCloud()
+
+    if (!global || !cohortHasData(global)) {
+      const periodCohorts = await loadAllPeriodCohortsOrdered()
+      let accumulator: CohortMatrix | null = global && cohortHasData(global) ? global : null
+      for (const item of periodCohorts) {
+        if (item.cohort && isCohortMatrix(item.cohort)) {
+          accumulator = mergeCohortWindow(accumulator, item.cohort, { skipZeros: true })
+        }
+      }
+      if (accumulator && cohortHasData(accumulator)) {
+        global = accumulator
+        try {
+          await saveGlobalCohortToCloud(accumulator)
+        } catch (error) {
+          console.error('[dashboard-data-store] Global cohort migration kaydı başarısız:', error)
+        }
+      }
+    }
+
+    cohortLoadedThisSession = true
+    if (global) set({ cohortAll: global })
+  })()
+    .catch((error) => {
+      console.error('[dashboard-data-store] Global cohort yüklenemedi:', error)
+    })
+    .finally(() => {
+      cohortEnsureTask = null
+    })
+
+  return cohortEnsureTask
+}
+
 interface DashboardDataStore {
   periods: Record<string, DashboardPeriodData>
+  cohortAll: CohortMatrix | null
   cloudSyncByPeriod: Record<string, PeriodCloudSyncState>
   ensurePeriod: (year: number, month: number) => void
+  ensureCohort: () => void
+  updateCohort: (year: number, month: number, windowCohort: CohortMatrix) => void
   updatePeriodData: (
     year: number,
     month: number,
@@ -1004,9 +1192,18 @@ export const useDashboardDataStore = create<DashboardDataStore>()(
   persist(
     (set, get) => ({
       periods: createInitialPeriods(),
+      cohortAll: null,
       cloudSyncByPeriod: {},
       ensurePeriod: (year, month) => {
         void ensurePeriodRemoteFirst(year, month, get, set)
+      },
+      ensureCohort: () => {
+        void ensureCohortRemoteFirst(set)
+      },
+      updateCohort: (_year, _month, windowCohort) => {
+        const merged = mergeCohortWindow(get().cohortAll, windowCohort, { skipZeros: false })
+        set({ cohortAll: merged })
+        scheduleGlobalCohortSave(merged)
       },
       updatePeriodData: (year, month, updater) => {
         const key = getPeriodKey(year, month)
@@ -1071,14 +1268,20 @@ export const useDashboardDataStore = create<DashboardDataStore>()(
         periodLocalVersions.clear()
         hydratedPeriodKeys.clear()
         localToCloudMigrationTask = null
+        cohortEnsureTask = null
+        cohortLoadedThisSession = false
+        if (globalCohortSaveTimer) {
+          clearTimeout(globalCohortSaveTimer)
+          globalCohortSaveTimer = null
+        }
         safeStorageRemoveItem(LOCAL_TO_CLOUD_MIGRATION_FLAG)
-        set({ periods: createInitialPeriods(), cloudSyncByPeriod: {} })
+        set({ periods: createInitialPeriods(), cohortAll: null, cloudSyncByPeriod: {} })
       },
     }),
     {
       name: STORAGE_KEY,
       storage: createJSONStorage(() => localStorage),
-      partialize: (state) => ({ periods: state.periods }),
+      partialize: (state) => ({ periods: state.periods, cohortAll: state.cohortAll }),
       merge: (persistedState, currentState) => {
         const persisted = isObjectLike(persistedState) ? persistedState : {}
         const current = currentState as DashboardDataStore
@@ -1086,6 +1289,7 @@ export const useDashboardDataStore = create<DashboardDataStore>()(
           ...current,
           ...persisted,
           periods: ensurePeriodsMap(persisted.periods ?? current.periods),
+          cohortAll: isCohortMatrix(persisted.cohortAll) ? persisted.cohortAll : current.cohortAll,
           cloudSyncByPeriod: current.cloudSyncByPeriod,
         }
       },

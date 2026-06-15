@@ -1,12 +1,12 @@
 import { CohortHeatmap } from './CohortHeatmap'
 import { CohortTopFirms } from './CohortTopFirms'
 import { PageSection } from '@/components/layout/PageSection'
-import { useDashboardPeriodData } from '@/hooks/use-dashboard-data'
+import { useCohortForPeriod } from '@/hooks/use-dashboard-data'
+import { useFilters } from '@/hooks/use-filters'
 
 export function CohortTab() {
-  const periodData = useDashboardPeriodData()
-  if (!periodData) return null
-  const data = periodData.cohort
+  const { year, month } = useFilters()
+  const data = useCohortForPeriod(year, month)
 
   return (
     <div className="space-y-6">

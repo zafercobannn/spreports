@@ -13,6 +13,7 @@ import { CohortHeatmapEditor } from '@/features/cohort/CohortHeatmapEditor'
 import { RepresentativeSuccessAdmin } from '@/features/team-performance/RepresentativeSuccessAdmin'
 import { parseRepresentativeCsv } from '@/features/team-performance/representative-success-utils'
 import { useFilters } from '@/hooks/use-filters'
+import { useCohortForPeriod } from '@/hooks/use-dashboard-data'
 import { isCloudPersistenceEnabled } from '@/services/firebase/dashboard-period-service'
 import { getPeriodKey, useDashboardDataStore } from '@/stores/dashboard-data-store'
 import type { CloudSyncStatus } from '@/stores/dashboard-data-store'
@@ -634,6 +635,8 @@ function AdminWorkspace() {
   const ensurePeriod = useDashboardDataStore((state) => state.ensurePeriod)
   const savePeriodNow = useDashboardDataStore((state) => state.savePeriodNow)
   const updatePeriodData = useDashboardDataStore((state) => state.updatePeriodData)
+  const updateCohort = useDashboardDataStore((state) => state.updateCohort)
+  const cohortWindow = useCohortForPeriod(editYear, editMonth)
   const resetPeriod = useDashboardDataStore((state) => state.resetPeriod)
   const resetAll = useDashboardDataStore((state) => state.resetAll)
 
@@ -1230,13 +1233,8 @@ function AdminWorkspace() {
               description="Isı haritası verisini doğrudan hücrelerden güncelleyebilirsin."
             >
               <CohortHeatmapEditor
-                data={periodData.cohort}
-                onChange={(nextCohort) =>
-                  patchPeriod((data) => ({
-                    ...data,
-                    cohort: nextCohort,
-                  }))
-                }
+                data={cohortWindow}
+                onChange={(nextCohort) => updateCohort(editYear, editMonth, nextCohort)}
               />
             </AdminSectionCard>
           </section>

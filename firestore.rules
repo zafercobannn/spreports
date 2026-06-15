@@ -21,6 +21,11 @@ service cloud.firestore {
       }
     }
 
+    match /dashboard_cohort/{docId} {
+      allow read: if isAdmin();
+      allow create, update, delete: if isAdmin();
+    }
+
     match /firm_notes/{firmId} {
       allow read: if isAdmin();
       allow create, update, delete: if isAdmin();

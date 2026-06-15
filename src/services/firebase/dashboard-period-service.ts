@@ -24,12 +24,18 @@ import {
 } from '@/lib/firebase/firebase-app'
 import { decryptJsonAES256, encryptJsonAES256, isAes256Enabled } from '@/lib/security/aes-256'
 import type { DashboardPeriodData } from '@/types/dashboard-data'
+import type { CohortMatrix } from '@/types/cohort'
 import type { RepresentativeSuccessRecord } from '@/types/team'
 import { calculateRepresentativeMetrics } from '@/features/team-performance/representative-success-utils'
 
 const PERIOD_COLLECTION = 'dashboard_periods'
 const REPRESENTATIVE_SUBCOLLECTION = 'representatives'
 const PERIOD_SCHEMA_VERSION = 2
+
+// Cohort tek kaynak (global) doküman: her dönemde tekrarlanan kopya yerine
+// tüm go-live aylarının birikimli matrisi burada tutulur.
+const COHORT_COLLECTION = 'dashboard_cohort'
+const COHORT_DOC_ID = 'global'
 
 interface EncryptedRepresentativePayload {
   id: string
@@ -304,6 +310,83 @@ export async function loadDashboardPeriodFromCloud(
     representativeWeights: payload.representativeWeights,
     representativeSuccess,
   }
+}
+
+function isCohortMatrixShape(value: unknown): value is CohortMatrix {
+  return Boolean(value)
+    && typeof value === 'object'
+    && Array.isArray((value as CohortMatrix).rows)
+    && Array.isArray((value as CohortMatrix).months)
+}
+
+/** Global cohort dokümanını okur; yoksa null döner. */
+export async function loadGlobalCohortFromCloud(): Promise<CohortMatrix | null> {
+  if (!isCloudPersistenceEnabled()) return null
+
+  const ref = doc(getFirebaseDb(), COHORT_COLLECTION, COHORT_DOC_ID)
+  const snapshot = await getDoc(ref)
+  if (!snapshot.exists()) return null
+
+  const data = snapshot.data() as Record<string, unknown>
+  const cohort = data.cohort
+  return isCohortMatrixShape(cohort) ? cohort : null
+}
+
+/** Global cohort dokümanını yazar (tek kaynak). */
+export async function saveGlobalCohortToCloud(cohort: CohortMatrix): Promise<void> {
+  if (!isCloudPersistenceEnabled()) return
+  requireAdminFirebaseUser()
+
+  const ref = doc(getFirebaseDb(), COHORT_COLLECTION, COHORT_DOC_ID)
+  await setDoc(
+    ref,
+    {
+      cohort: stripUndefinedDeep(cohort),
+      schemaVersion: 1,
+      updatedAt: serverTimestamp(),
+    },
+    { merge: true },
+  )
+}
+
+/**
+ * Tüm dönem dokümanlarındaki cohort kopyalarını, güncellenme zamanına göre
+ * (en eski -> en yeni) sıralı döner. Global cohort'u ilk kez inşa ederken
+ * (migration) kullanılır.
+ */
+export async function loadAllPeriodCohortsOrdered(): Promise<
+  { periodKey: string; updatedMs: number; cohort: CohortMatrix | null }[]
+> {
+  if (!isCloudPersistenceEnabled()) return []
+
+  const snapshot = await getDocs(collection(getFirebaseDb(), PERIOD_COLLECTION))
+  const results: { periodKey: string; updatedMs: number; cohort: CohortMatrix | null }[] = []
+
+  for (const docSnapshot of snapshot.docs) {
+    if (!/^\d{4}-\d{2}$/.test(docSnapshot.id)) continue
+    const data = docSnapshot.data() as Record<string, unknown>
+
+    let cohort: CohortMatrix | null = null
+    if (typeof data.securePayload === 'string' && isAes256Enabled()) {
+      try {
+        const decrypted = await decryptJsonAES256<EncryptedPeriodPayload>(data.securePayload)
+        cohort = isCohortMatrixShape(decrypted?.cohort) ? decrypted.cohort : null
+      } catch {
+        cohort = null
+      }
+    } else if (data.payload && typeof data.payload === 'object') {
+      const payloadCohort = (data.payload as Record<string, unknown>).cohort
+      cohort = isCohortMatrixShape(payloadCohort) ? payloadCohort : null
+    }
+
+    const updatedAt = data.updatedAt as { toMillis?: () => number } | undefined
+    const updatedMs = typeof updatedAt?.toMillis === 'function' ? updatedAt.toMillis() : 0
+
+    results.push({ periodKey: docSnapshot.id, updatedMs, cohort })
+  }
+
+  results.sort((a, b) => a.updatedMs - b.updatedMs)
+  return results
 }
 
 export async function searchRepresentativesInCloud({
