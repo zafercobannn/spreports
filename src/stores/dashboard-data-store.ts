@@ -826,6 +826,79 @@ function migrateLocalPeriodsToCloudIfNeeded(
   return localToCloudMigrationTask
 }
 
+function cohortHasData(cohort: CohortMatrix | null | undefined): boolean {
+  if (!cohort || !Array.isArray(cohort.rows)) return false
+  return cohort.rows.some(
+    (row) =>
+      row.firmCount > 0 ||
+      row.cells.some((cell) => cell.gpvValue > 0) ||
+      row.topFirms.some((firm) => firm.name.trim() !== '' || firm.gpv > 0),
+  )
+}
+
+/**
+ * Yeni bir dönem oluşturulurken, eski ayların verisi sıfırlanmasın diye
+ * en güncel (hedeften önceki) veri içeren dönemin cohort matrisini bulur.
+ */
+function findPriorCohortSource(
+  periods: Record<string, DashboardPeriodData>,
+  year: number,
+  month: number,
+): CohortMatrix | null {
+  const target = year * 12 + (normalizeMonth(month) - 1)
+  let best: { ord: number; cohort: CohortMatrix } | null = null
+  for (const [key, data] of Object.entries(periods)) {
+    const parsed = parsePeriodKey(key)
+    if (!parsed) continue
+    const ord = parsed.year * 12 + (parsed.month - 1)
+    if (ord >= target) continue
+    if (!cohortHasData(data.cohort)) continue
+    if (!best || ord > best.ord) best = { ord, cohort: data.cohort }
+  }
+  return best?.cohort ?? null
+}
+
+/** Boş dönem verisi üretir; varsa cohort'u önceki dönemden devralarak (carry-forward) seed'ler. */
+function createPeriodDataWithCarryForward(
+  periods: Record<string, DashboardPeriodData>,
+  year: number,
+  month: number,
+): DashboardPeriodData {
+  const fresh = createEmptyPeriodData(year, month)
+  const priorCohort = findPriorCohortSource(periods, year, month)
+  if (!priorCohort) return fresh
+  return { ...fresh, cohort: normalizeCohortForMonth(priorCohort, year, month) }
+}
+
+/**
+ * Önce yerel dönemlerden, yoksa buluttan bir önceki dönemin cohort'unu çözer.
+ * Yeni dönemin yuvarlanan penceresine yansıtılmış cohort döner; kaynak yoksa null.
+ */
+async function resolveCarryForwardCohort(
+  year: number,
+  month: number,
+  get: StoreApi<DashboardDataStore>['getState'],
+): Promise<CohortMatrix | null> {
+  const localSource = findPriorCohortSource(ensurePeriodsMap(get().periods), year, month)
+  if (localSource) return normalizeCohortForMonth(localSource, year, month)
+
+  if (isCloudPersistenceEnabled()) {
+    const prev = normalizeYearMonth(year, month - 1)
+    try {
+      const cloudPrev = await loadDashboardPeriodFromCloud(prev.year, prev.month)
+      if (cloudPrev) {
+        const prevData = sanitizePeriodData(prev.year, prev.month, cloudPrev)
+        if (cohortHasData(prevData.cohort)) {
+          return normalizeCohortForMonth(prevData.cohort, year, month)
+        }
+      }
+    } catch (error) {
+      console.error('[dashboard-data-store] Önceki dönem cohort devralınamadı:', error)
+    }
+  }
+  return null
+}
+
 function ensurePeriodRemoteFirst(
   year: number,
   month: number,
@@ -864,8 +937,17 @@ function ensurePeriodRemoteFirst(
       return
     }
 
-    const fresh = createEmptyPeriodData(normalized.year, normalized.month)
+    // Yeni dönem: cohort'u en güncel önceki dönemden devral ki eski ayların hücreleri sıfırlanmasın.
+    const carriedCohort = await resolveCarryForwardCohort(normalized.year, normalized.month, get)
     if (getLocalPeriodVersion(key) !== localVersionAtStart) return
+    const periodsAfterCarry = ensurePeriodsMap(get().periods)
+    if (periodsAfterCarry[key]) {
+      hydratedPeriodKeys.add(key)
+      return
+    }
+
+    const emptyFresh = createEmptyPeriodData(normalized.year, normalized.month)
+    const fresh = carriedCohort ? { ...emptyFresh, cohort: carriedCohort } : emptyFresh
 
     set((state) => ({
       periods: {
@@ -887,7 +969,7 @@ function ensurePeriodRemoteFirst(
       const safePeriods = ensurePeriodsMap(get().periods)
       if (safePeriods[key]) return
 
-      const fallback = createEmptyPeriodData(normalized.year, normalized.month)
+      const fallback = createPeriodDataWithCarryForward(safePeriods, normalized.year, normalized.month)
       set((state) => ({
         periods: {
           ...ensurePeriodsMap(state.periods),
@@ -932,7 +1014,7 @@ export const useDashboardDataStore = create<DashboardDataStore>()(
         bumpLocalPeriodVersion(key)
         set((state) => {
           const safePeriods = ensurePeriodsMap(state.periods)
-          const current = safePeriods[key] ?? createEmptyPeriodData(year, month)
+          const current = safePeriods[key] ?? createPeriodDataWithCarryForward(safePeriods, year, month)
           const updated = sanitizePeriodData(year, month, updater(current))
           return {
             periods: {
