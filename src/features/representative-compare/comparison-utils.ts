@@ -135,62 +135,6 @@ export function listRepresentativesAcrossPeriods(
   return Array.from(set).sort((a, b) => a.localeCompare(b, 'tr'))
 }
 
-export interface RadarPoint {
-  label: string
-  /** Normalized to 0-100 */
-  leftValue: number
-  rightValue: number
-}
-
-/** Build 6 axes 0-100 for radar comparison. */
-export function buildRadarPoints(left: AggregatedRep, right: AggregatedRep): RadarPoint[] {
-  const safeRatio = (a: number, b: number) => (b > 0 ? Math.min(100, (a / b) * 100) : 0)
-
-  // For Live, normalize against max of both reps
-  const liveMax = Math.max(left.liveCount, right.liveCount, 1)
-  const liveScale = (n: number) => Math.min(100, (n / liveMax) * 100)
-
-  // For duration (lower better), invert against max
-  const durMax = Math.max(left.avgGoLiveDurationDays, right.avgGoLiveDurationDays, 1)
-  const durScale = (n: number) => (n > 0 ? Math.max(0, 100 - (n / durMax) * 100) : 0)
-
-  const usesCsat = left.usesCsat || right.usesCsat
-  const customer = (rep: AggregatedRep) => (usesCsat ? rep.csatScore : rep.npsScore) * 20
-
-  return [
-    {
-      label: 'Endeks',
-      leftValue: Math.min(100, left.successIndex),
-      rightValue: Math.min(100, right.successIndex),
-    },
-    {
-      label: 'Canlı',
-      leftValue: liveScale(left.liveCount),
-      rightValue: liveScale(right.liveCount),
-    },
-    {
-      label: 'Audit',
-      leftValue: Math.max(0, Math.min(100, left.auditScore)),
-      rightValue: Math.max(0, Math.min(100, right.auditScore)),
-    },
-    {
-      label: usesCsat ? 'CSAT' : 'NPS',
-      leftValue: Math.max(0, Math.min(100, customer(left))),
-      rightValue: Math.max(0, Math.min(100, customer(right))),
-    },
-    {
-      label: 'Hedef',
-      leftValue: safeRatio(left.liveCount, left.liveTarget),
-      rightValue: safeRatio(right.liveCount, right.liveTarget),
-    },
-    {
-      label: 'Hız',
-      leftValue: durScale(left.avgGoLiveDurationDays),
-      rightValue: durScale(right.avgGoLiveDurationDays),
-    },
-  ]
-}
-
 export interface MetricRow {
   label: string
   /** Format the number for display */

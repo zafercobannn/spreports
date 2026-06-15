@@ -13,7 +13,6 @@ import type { MonthlyGPV } from '@/types/gpv'
 import type { TargetBrand } from '@/types/targets'
 import type { TopFirm } from '@/types/firms'
 import { GPVMetricsPanel } from './GPVMetricsPanel'
-import { GPVTrendChart } from './GPVTrendChart'
 import { LiveDistributionChart } from './LiveDistributionChart'
 import { PreviousPlatformChart } from './PreviousPlatformChart'
 import { PageSection } from '@/components/layout/PageSection'
@@ -56,11 +55,6 @@ export function MonthlyOverviewTab() {
       {/* Detailed KPI grid */}
       <PageSection title="GPV Metrikleri" description="İlgili ay genel bakış">
         <GPVMetricsPanel data={data} />
-      </PageSection>
-
-      {/* Trend chart */}
-      <PageSection title="Trend Analizi" description="12 aylık SP & ikas GPV karşılaştırması">
-        <GPVTrendChart />
       </PageSection>
 
       {/* Distribution + previous platforms */}

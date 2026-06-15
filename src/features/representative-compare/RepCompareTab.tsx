@@ -7,7 +7,6 @@ import { SearchableSelect } from '@/components/ui/searchable-select'
 import {
   aggregateRep,
   buildMetricRows,
-  buildRadarPoints,
   describeSelection,
   getPeriodKeysForSelection,
   listRepresentativesAcrossPeriods,
@@ -15,7 +14,6 @@ import {
   type PeriodSelection,
   type Scope,
 } from './comparison-utils'
-import { RadarCompareChart } from './RadarCompareChart'
 
 const MONTHS = ['Ocak', 'Şubat', 'Mart', 'Nisan', 'Mayıs', 'Haziran', 'Temmuz', 'Ağustos', 'Eylül', 'Ekim', 'Kasım', 'Aralık']
 const QUARTERS = ['Q1', 'Q2', 'Q3', 'Q4']
@@ -95,10 +93,6 @@ export function RepCompareTab() {
     [rightName, rightSelection, periods],
   )
 
-  const radarPoints = useMemo(
-    () => (leftRep && rightRep ? buildRadarPoints(leftRep, rightRep) : []),
-    [leftRep, rightRep],
-  )
   const metricRows = useMemo(
     () => (leftRep && rightRep ? buildMetricRows(leftRep, rightRep) : []),
     [leftRep, rightRep],
@@ -142,31 +136,6 @@ export function RepCompareTab() {
       <div className="grid grid-cols-1 gap-5 lg:grid-cols-2">
         <ProfileCard rep={leftRep} fallbackName={leftName} accent="lime" selection={leftSelection} />
         <ProfileCard rep={rightRep} fallbackName={rightName} accent="ink" selection={rightSelection} />
-      </div>
-
-      <div className="bento-card p-6">
-        <div className="mb-4 flex items-end justify-between gap-3">
-          <div className="space-y-1">
-            <span className="rounded-full bg-foreground/10 px-2.5 py-1 text-[10px] font-semibold uppercase tracking-[0.16em] text-foreground/70">
-              Radar Karşılaştırma
-            </span>
-            <p className="text-[12px] text-muted-foreground">
-              Endeks · Canlı · Audit · {leftRep?.usesCsat || rightRep?.usesCsat ? 'CSAT' : 'NPS'} · Hedef · Hız
-            </p>
-          </div>
-        </div>
-        {leftRep && rightRep ? (
-          <RadarCompareChart
-            points={radarPoints}
-            leftLabel={`${leftRep.name} · ${describeSelection(leftSelection)}`}
-            rightLabel={`${rightRep.name} · ${describeSelection(rightSelection)}`}
-            size={420}
-          />
-        ) : (
-          <div className="flex items-center justify-center py-12 text-[13px] text-muted-foreground">
-            Karşılaştırma için her iki tarafa da temsilci ve dönem seçilmelidir.
-          </div>
-        )}
       </div>
 
       <div className="bento-card overflow-hidden">
