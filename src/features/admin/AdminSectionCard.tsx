@@ -1,4 +1,4 @@
-import { useState, type HTMLAttributes, type ReactNode } from 'react'
+import { useEffect, useState, type HTMLAttributes, type ReactNode } from 'react'
 import { ChevronDown } from 'lucide-react'
 import { cn } from '@/lib/utils'
 
@@ -8,6 +8,10 @@ interface AdminSectionCardProps extends HTMLAttributes<HTMLDivElement> {
   eyebrow?: string
   actions?: ReactNode
   defaultOpen?: boolean
+  /** Sidebar'da seçili bölümse kartı vurgular (renklendirir). */
+  active?: boolean
+  /** Değeri her arttığında (sidebar tıklaması) kart açılır. */
+  openSignal?: number
 }
 
 export function AdminSectionCard({
@@ -18,15 +22,25 @@ export function AdminSectionCard({
   children,
   className,
   defaultOpen = false,
+  active = false,
+  openSignal,
   ...props
 }: AdminSectionCardProps) {
   const [isOpen, setIsOpen] = useState(defaultOpen)
 
+  // Sidebar'dan bu bölüm seçilince (openSignal artınca) kartı aç.
+  useEffect(() => {
+    if (!openSignal) return
+    setIsOpen(true)
+  }, [openSignal])
+
   return (
     <div
       className={cn(
-        'overflow-hidden rounded-2xl border border-black/8 bg-white/70 transition-shadow duration-200',
+        'overflow-hidden rounded-2xl border bg-white/70 transition-[box-shadow,border-color,background-color] duration-200',
+        active ? 'border-primary/50 ring-2 ring-primary/25' : 'border-black/8',
         isOpen && 'shadow-[0_8px_30px_-12px_rgba(18,33,39,0.15)]',
+        active && 'bg-white shadow-[0_10px_34px_-12px_rgba(18,33,39,0.22)]',
         className,
       )}
       {...props}

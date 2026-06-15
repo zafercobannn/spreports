@@ -608,6 +608,15 @@ function AdminWorkspace() {
   const [importInfo, setImportInfo] = useState<string | null>(null)
   const [importError, setImportError] = useState<string | null>(null)
   const [activeSection, setActiveSection] = useState<AdminSectionId>('general')
+  const [sectionOpenSignals, setSectionOpenSignals] = useState<Record<AdminSectionId, number>>({
+    general: 0,
+    comparison: 0,
+    'top-firms': 0,
+    'target-counts': 0,
+    targets: 0,
+    team: 0,
+    cohort: 0,
+  })
 
   const periodKey = useMemo(() => getPeriodKey(editYear, editMonth), [editYear, editMonth])
 
@@ -741,6 +750,7 @@ function AdminWorkspace() {
   const handleSelectSection = (sectionId: string) => {
     const resolved = sectionId as AdminSectionId
     setActiveSection(resolved)
+    setSectionOpenSignals((prev) => ({ ...prev, [resolved]: prev[resolved] + 1 }))
     sectionRefs.current[resolved]?.scrollIntoView({
       behavior: 'smooth',
       block: 'start',
@@ -854,6 +864,8 @@ function AdminWorkspace() {
             className="scroll-mt-24 space-y-4 lg:scroll-mt-28"
           >
             <AdminSectionCard
+              active={activeSection === 'general'}
+              openSignal={sectionOpenSignals.general}
               eyebrow="Genel"
               title="Aylık Genel Veriler"
               description="En sık düzenlenen temel metrikler ve platform dağılımı."
@@ -1016,6 +1028,8 @@ function AdminWorkspace() {
             className="scroll-mt-24 space-y-4 lg:scroll-mt-28"
           >
             <AdminSectionCard
+              active={activeSection === 'comparison'}
+              openSignal={sectionOpenSignals.comparison}
               eyebrow="Karşılaştırma"
               title="Önceki Ay Karşılaştırma Verileri"
               description={`${getMonthName(prevMonth.month)} ${prevMonth.year} ve ${getMonthName(editMonth)} ${editYear} verilerini yan yana düzenle.`}
@@ -1047,6 +1061,8 @@ function AdminWorkspace() {
             className="scroll-mt-24 space-y-4 lg:scroll-mt-28"
           >
             <AdminSectionCard
+              active={activeSection === 'top-firms'}
+              openSignal={sectionOpenSignals['top-firms']}
               eyebrow="Ticari Görünüm"
               title="Top Firmalar"
               description="Top 15 listesini satır bazında hızlıca düzenle."
@@ -1107,6 +1123,8 @@ function AdminWorkspace() {
             className="scroll-mt-24 space-y-4 lg:scroll-mt-28"
           >
             <AdminSectionCard
+              active={activeSection === 'target-counts'}
+              openSignal={sectionOpenSignals['target-counts']}
               eyebrow="Pipeline"
               title="Hedef Adet Takibi"
               description="Bu aya ait hedef ve gerçekleşen adetleri girin. Ay değiştiğinde veriler otomatik takip eder."
@@ -1131,6 +1149,8 @@ function AdminWorkspace() {
             className="scroll-mt-24 space-y-4 lg:scroll-mt-28"
           >
             <AdminSectionCard
+              active={activeSection === 'targets'}
+              openSignal={sectionOpenSignals.targets}
               eyebrow="Pipeline"
               title="Hedef Markalar"
               description="Marka listesini daha okunaklı satır düzeninde yönet."
@@ -1169,6 +1189,8 @@ function AdminWorkspace() {
             className="scroll-mt-24 space-y-4 lg:scroll-mt-28"
           >
             <AdminSectionCard
+              active={activeSection === 'team'}
+              openSignal={sectionOpenSignals.team}
               eyebrow="Takım"
               title="Takım Performansı"
               description="CSV içe aktarma, ağırlık yönetimi ve süre düzenlemeleri tek akışta."
@@ -1201,6 +1223,8 @@ function AdminWorkspace() {
             className="scroll-mt-24 space-y-4 lg:scroll-mt-28"
           >
             <AdminSectionCard
+              active={activeSection === 'cohort'}
+              openSignal={sectionOpenSignals.cohort}
               eyebrow="Gelişmiş"
               title="Cohort Verisi"
               description="Isı haritası verisini doğrudan hücrelerden güncelleyebilirsin."
