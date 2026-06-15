@@ -49,31 +49,20 @@ export function XMonthTargetTab() {
   const currentPeriodKey = useMemo(() => getPeriodKey(year, month), [year, month])
   const currentPeriodData = useDashboardDataStore((s) => s.periods[currentPeriodKey])
 
+  // Etiket için bir sonraki ay (ör. Nisan'dayken "Mayıs ... hedeflenen markalar")
   const targetPeriod = useMemo(() => getOffsetPeriod(year, month, 1), [year, month])
-  const targetKey = useMemo(
-    () => getPeriodKey(targetPeriod.year, targetPeriod.month),
-    [targetPeriod.month, targetPeriod.year],
-  )
-  const targetPeriodData = useDashboardDataStore((s) => s.periods[targetKey])
 
   useEffect(() => {
     ensurePeriod(year, month)
-    ensurePeriod(targetPeriod.year, targetPeriod.month)
-  }, [ensurePeriod, year, month, targetPeriod.month, targetPeriod.year])
+  }, [ensurePeriod, year, month])
 
-  const currentLiveNames = useMemo(() => {
-    const names = new Set<string>()
-    for (const t of currentPeriodData?.targets ?? []) {
-      if (t.status === 'live' && t.name.trim()) names.add(t.name.trim().toLocaleLowerCase('tr-TR'))
-    }
-    return names
-  }, [currentPeriodData?.targets])
-
-  const allTargets = targetPeriodData?.targets ?? []
-  const pendingTargets = allTargets.filter(
-    (t) => t.status !== 'live' && !currentLiveNames.has(t.name.trim().toLocaleLowerCase('tr-TR')),
+  // Bu ayın "Canlı Değil" markaları = bir sonraki ay canlıya alınması hedeflenen markalar
+  const pendingTargets = useMemo(
+    () => (currentPeriodData?.targets ?? []).filter((t) => t.status !== 'live'),
+    [currentPeriodData?.targets],
   )
-  const targetCount = targetPeriodData?.targetCount ?? 0
+
+  const targetCount = pendingTargets.length
   const periodLabel = `${getMonthName(targetPeriod.month)} ${targetPeriod.year}`
 
   return (
