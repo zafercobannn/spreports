@@ -12,6 +12,14 @@ dist
 dist-ssr
 *.local
 
+# Env dosyaları (gizli config CI secret'larından gelir; .env.example şablon olarak kalır)
+.env
+.env.*
+!.env.example
+
+# Firebase CLI yerel cache
+.firebase/
+
 # Editor directories and files
 .vscode/*
 !.vscode/extensions.json
