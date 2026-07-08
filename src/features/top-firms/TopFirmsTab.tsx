@@ -1,17 +1,38 @@
+import { useEffect, useMemo } from 'react'
 import { Crown } from 'lucide-react'
 import { TopFirmsTable } from './TopFirmsTable'
 import { ShippingUsageChart } from './ShippingUsageChart'
 import { ParsUsageChart } from './ParsUsageChart'
 import { PwiUsageChart } from './PwiUsageChart'
 import { PageSection } from '@/components/layout/PageSection'
+import { ScopeSelector } from '@/components/filters/ScopeSelector'
 import { formatCompactCurrency, formatNumber } from '@/utils/format'
 import { sum, ratio } from '@/utils/calculations'
-import { useDashboardPeriodData } from '@/hooks/use-dashboard-data'
+import { useFilters } from '@/hooks/use-filters'
+import { usePeriodScope } from '@/hooks/use-period-scope'
+import { useDashboardDataStore } from '@/stores/dashboard-data-store'
+import { getPeriodKeysForSelection } from '@/utils/period-selection'
+import { aggregateTopFirms } from '@/utils/period-aggregate'
 
 export function TopFirmsTab() {
-  const periodData = useDashboardPeriodData()
-  if (!periodData) return null
-  const data = periodData.topFirms
+  const { year, month } = useFilters()
+  const periodScope = usePeriodScope(year, month)
+  const { selection } = periodScope
+  const periods = useDashboardDataStore((s) => s.periods)
+  const ensurePeriod = useDashboardDataStore((s) => s.ensurePeriod)
+
+  const periodKeys = useMemo(() => getPeriodKeysForSelection(selection), [selection])
+
+  useEffect(() => {
+    periodKeys.forEach((key) => {
+      const [yStr, mStr] = key.split('-')
+      const y = Number(yStr)
+      const m = Number(mStr)
+      if (Number.isFinite(y) && Number.isFinite(m)) void ensurePeriod(y, m)
+    })
+  }, [periodKeys, ensurePeriod])
+
+  const data = useMemo(() => aggregateTopFirms(selection, periods), [selection, periods])
 
   const totalRevenue = sum(data.map((f) => f.gpv))
   const ikasUsers = data.filter((f) => f.ikasCargoValue > 0).length
@@ -26,6 +47,10 @@ export function TopFirmsTab() {
 
   return (
     <div className="space-y-6">
+      <div className="flex justify-end">
+        <ScopeSelector periodScope={periodScope} />
+      </div>
+
       {/* Featured KPI grid — 1 hero + 3 ratio cards */}
       <div className="grid grid-cols-1 gap-4 lg:grid-cols-4">
         <div className="bento-card relative overflow-hidden p-5 lg:col-span-1">

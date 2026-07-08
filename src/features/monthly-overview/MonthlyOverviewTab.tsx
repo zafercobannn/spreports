@@ -1,7 +1,8 @@
-import { useMemo } from 'react'
+import { useEffect, useMemo } from 'react'
 import { Layers, Sparkles } from 'lucide-react'
 import { useDashboardPeriodData } from '@/hooks/use-dashboard-data'
 import { useFilters } from '@/hooks/use-filters'
+import { usePeriodScope } from '@/hooks/use-period-scope'
 import { getPeriodKey, useDashboardDataStore } from '@/stores/dashboard-data-store'
 import {
   formatCompactCurrency,
@@ -9,6 +10,8 @@ import {
   formatPercent,
 } from '@/utils/format'
 import { ratio, percentChange } from '@/utils/calculations'
+import { getPeriodKeysForSelection, getPreviousPeriodSelection } from '@/utils/period-selection'
+import { aggregateMonthlyGPV, aggregateTargets, aggregateTopFirms } from '@/utils/period-aggregate'
 import type { MonthlyGPV } from '@/types/gpv'
 import type { TargetBrand } from '@/types/targets'
 import type { TopFirm } from '@/types/firms'
@@ -16,20 +19,51 @@ import { GPVMetricsPanel } from './GPVMetricsPanel'
 import { LiveDistributionChart } from './LiveDistributionChart'
 import { PreviousPlatformChart } from './PreviousPlatformChart'
 import { PageSection } from '@/components/layout/PageSection'
+import { ScopeSelector } from '@/components/filters/ScopeSelector'
 
 const MONTH_SHORT = ['Oca', 'Şub', 'Mar', 'Nis', 'May', 'Haz', 'Tem', 'Ağu', 'Eyl', 'Eki', 'Kas', 'Ara']
 
 export function MonthlyOverviewTab() {
+  const { year, month } = useFilters()
   const periodData = useDashboardPeriodData()
+  const periodScope = usePeriodScope(year, month)
+  const { selection } = periodScope
+
+  const periods = useDashboardDataStore((s) => s.periods)
+  const ensurePeriod = useDashboardDataStore((s) => s.ensurePeriod)
+
+  const periodKeys = useMemo(() => getPeriodKeysForSelection(selection), [selection])
+  const previousSelection = useMemo(() => getPreviousPeriodSelection(selection), [selection])
+  const previousPeriodKeys = useMemo(() => getPeriodKeysForSelection(previousSelection), [previousSelection])
+
+  useEffect(() => {
+    ;[...periodKeys, ...previousPeriodKeys].forEach((key) => {
+      const [yStr, mStr] = key.split('-')
+      const y = Number(yStr)
+      const m = Number(mStr)
+      if (Number.isFinite(y) && Number.isFinite(m)) void ensurePeriod(y, m)
+    })
+  }, [periodKeys, previousPeriodKeys, ensurePeriod])
+
+  const data = useMemo(() => aggregateMonthlyGPV(selection, periods), [selection, periods])
+  const previousData = useMemo(() => aggregateMonthlyGPV(previousSelection, periods), [previousSelection, periods])
+  const topFirms = useMemo(() => aggregateTopFirms(selection, periods), [selection, periods])
+  const targetsData = useMemo(() => aggregateTargets(selection, periods), [selection, periods])
+
+  const ikasGpvChangePct = previousData.ikasGPV > 0 ? percentChange(data.ikasGPV, previousData.ikasGPV) : 0
+
   if (!periodData) return null
-  const data = periodData.monthlyGPV
 
   return (
     <div className="space-y-6">
+      <div className="flex justify-end">
+        <ScopeSelector periodScope={periodScope} />
+      </div>
+
       {/* Bento — 4×2 grid, no empty cells */}
       <div className="grid grid-cols-1 gap-4 lg:grid-cols-4">
         <div className="fade-up fade-up-d1">
-          <IkasGPVHeroCard data={data} />
+          <IkasGPVHeroCard data={data} changePct={ikasGpvChangePct} />
         </div>
         <div className="fade-up fade-up-d2">
           <ProgressBarCard />
@@ -38,22 +72,22 @@ export function MonthlyOverviewTab() {
           <GPVDonutCard data={data} />
         </div>
         <div className="fade-up fade-up-d4">
-          <OnboardingPillsCard data={data} periodData={periodData} />
+          <OnboardingPillsCard data={data} periodData={targetsData} />
         </div>
 
         <div className="fade-up fade-up-d5">
           <TopPlatformsCard data={data} />
         </div>
         <div className="fade-up fade-up-d6 lg:col-span-2">
-          <TopFirmsRailCard topFirms={periodData.topFirms} />
+          <TopFirmsRailCard topFirms={topFirms} />
         </div>
         <div className="fade-up fade-up-d7">
-          <PendingTargetsInkCard targets={periodData.targets} />
+          <PendingTargetsInkCard targets={targetsData.targets} />
         </div>
       </div>
 
       {/* Detailed KPI grid */}
-      <PageSection title="GPV Metrikleri" description="İlgili ay genel bakış">
+      <PageSection title="GPV Metrikleri" description="Seçili dönem genel bakış">
         <GPVMetricsPanel data={data} />
       </PageSection>
 
@@ -75,19 +109,8 @@ export function MonthlyOverviewTab() {
 }
 
 /* ─────────────────── ikas GPV hero ─────────────────── */
-function IkasGPVHeroCard({ data }: { data: MonthlyGPV }) {
-  const { year, month } = useFilters()
-  const periods = useDashboardDataStore((s) => s.periods)
-
-  const change = useMemo(() => {
-    const allKeys = Object.keys(periods).sort()
-    const idx = allKeys.indexOf(getPeriodKey(year, month))
-    if (idx === -1) return 0
-    const prev = allKeys[idx - 1] ? periods[allKeys[idx - 1]]?.monthlyGPV?.ikasGPV ?? 0 : 0
-    return prev > 0 ? percentChange(data.ikasGPV, prev) : 0
-  }, [periods, year, month, data.ikasGPV])
-
-  const isUp = change >= 0
+function IkasGPVHeroCard({ data, changePct }: { data: MonthlyGPV; changePct: number }) {
+  const isUp = changePct >= 0
 
   return (
     <div className="bento-card relative h-full min-h-[280px] overflow-hidden p-0">
@@ -113,7 +136,7 @@ function IkasGPVHeroCard({ data }: { data: MonthlyGPV }) {
               (isUp ? 'bg-foreground text-background' : 'bg-[var(--color-danger)] text-white')
             }
           >
-            {isUp ? '↑' : '↓'} {Math.abs(change).toFixed(1)}%
+            {isUp ? '↑' : '↓'} {Math.abs(changePct).toFixed(1)}%
           </span>
         </div>
 

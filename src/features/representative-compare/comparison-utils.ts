@@ -1,33 +1,18 @@
 import type { RepresentativeSuccessRecord, RepresentativeSuccessWeights } from '@/types/team'
 import { getDefaultRepresentativeWeights, calculateRepresentativeMetrics, isRepresentativeCsatPeriod } from '@/features/team-performance/representative-success-utils'
-import { getPeriodKey } from '@/stores/dashboard-data-store'
 import type { DashboardPeriodData } from '@/types/dashboard-data'
+import {
+  getPeriodKeysForSelection,
+  describeSelection,
+  selectionEffectiveMonth,
+  type Scope,
+  type PeriodSelection,
+} from '@/utils/period-selection'
 
-export type Scope = 'monthly' | 'quarterly' | 'yearly'
-
-export interface PeriodSelection {
-  scope: Scope
-  year: number
-  /** month (1-12) for monthly | quarter (1-4) for quarterly | unused for yearly */
-  value: number
-}
-
-export function getPeriodKeysForSelection(selection: PeriodSelection): string[] {
-  const { scope, year, value } = selection
-  if (scope === 'monthly') return [getPeriodKey(year, value)]
-  if (scope === 'quarterly') {
-    const start = (value - 1) * 3 + 1
-    return [getPeriodKey(year, start), getPeriodKey(year, start + 1), getPeriodKey(year, start + 2)]
-  }
-  return Array.from({ length: 12 }, (_, i) => getPeriodKey(year, i + 1))
-}
-
-export function describeSelection(selection: PeriodSelection): string {
-  const months = ['Oca', 'Şub', 'Mar', 'Nis', 'May', 'Haz', 'Tem', 'Ağu', 'Eyl', 'Eki', 'Kas', 'Ara']
-  if (selection.scope === 'monthly') return `${months[selection.value - 1] ?? ''} ${selection.year}`
-  if (selection.scope === 'quarterly') return `Q${selection.value} ${selection.year}`
-  return `${selection.year} (Yıllık)`
-}
+// Bu tipler/fonksiyonlar artık src/utils/period-selection.ts içinde yaşıyor (jenerik, birden
+// fazla sekme paylaşıyor); mevcut import eden dosyaları bozmamak için burada re-export ediyoruz.
+export type { Scope, PeriodSelection }
+export { getPeriodKeysForSelection, describeSelection, selectionEffectiveMonth }
 
 export interface AggregatedRep {
   name: string
@@ -53,12 +38,6 @@ export function pickWeights(selection: PeriodSelection): RepresentativeSuccessWe
     return getDefaultRepresentativeWeights(selection.year, start + 2)
   }
   return getDefaultRepresentativeWeights(selection.year, 12)
-}
-
-export function selectionEffectiveMonth(selection: PeriodSelection): number {
-  if (selection.scope === 'monthly') return selection.value
-  if (selection.scope === 'quarterly') return (selection.value - 1) * 3 + 3
-  return 12
 }
 
 export function aggregateRep(

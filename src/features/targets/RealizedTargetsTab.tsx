@@ -1,9 +1,12 @@
 import { useEffect, useMemo } from 'react'
 import { CheckCircle2 } from 'lucide-react'
 import { PageSection } from '@/components/layout/PageSection'
+import { ScopeSelector } from '@/components/filters/ScopeSelector'
 import { useFilters } from '@/hooks/use-filters'
-import { getPeriodKey, useDashboardDataStore } from '@/stores/dashboard-data-store'
-import { getMonthName } from '@/utils/date-utils'
+import { usePeriodScope } from '@/hooks/use-period-scope'
+import { useDashboardDataStore } from '@/stores/dashboard-data-store'
+import { describeSelection, getPeriodKeysForSelection } from '@/utils/period-selection'
+import { aggregateTargets } from '@/utils/period-aggregate'
 import { TargetBrandsList } from './TargetBrandsList'
 
 function TargetCountSummary({
@@ -56,29 +59,38 @@ function TargetCountSummary({
 
 export function RealizedTargetsTab() {
   const { year, month } = useFilters()
+  const periodScope = usePeriodScope(year, month)
+  const { selection } = periodScope
   const ensurePeriod = useDashboardDataStore((s) => s.ensurePeriod)
+  const periods = useDashboardDataStore((s) => s.periods)
 
-  const periodKey = useMemo(() => getPeriodKey(year, month), [year, month])
-  const periodData = useDashboardDataStore((s) => s.periods[periodKey])
+  const periodKeys = useMemo(() => getPeriodKeysForSelection(selection), [selection])
 
   useEffect(() => {
-    ensurePeriod(year, month)
-  }, [ensurePeriod, month, year])
+    periodKeys.forEach((key) => {
+      const [yStr, mStr] = key.split('-')
+      const y = Number(yStr)
+      const m = Number(mStr)
+      if (Number.isFinite(y) && Number.isFinite(m)) void ensurePeriod(y, m)
+    })
+  }, [periodKeys, ensurePeriod])
 
+  const targetsData = useMemo(() => aggregateTargets(selection, periods), [selection, periods])
   const realizedTargets = useMemo(
-    () => (periodData?.targets ?? []).filter((target) => target.status === 'live'),
-    [periodData?.targets],
+    () => targetsData.targets.filter((target) => target.status === 'live'),
+    [targetsData.targets],
   )
 
-  const targetCount = periodData?.targetCount ?? 0
-  const realizedCount = periodData?.realizedCount ?? realizedTargets.length
-  const periodLabel = `${getMonthName(month)} ${year}`
+  const periodLabel = describeSelection(selection)
 
   return (
     <div className="space-y-6">
+      <div className="flex justify-end">
+        <ScopeSelector periodScope={periodScope} />
+      </div>
       <TargetCountSummary
-        realized={realizedCount}
-        target={targetCount}
+        realized={targetsData.realizedCount}
+        target={targetsData.targetCount}
         periodLabel={periodLabel}
       />
       <PageSection

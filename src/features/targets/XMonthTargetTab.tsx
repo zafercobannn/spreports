@@ -1,8 +1,12 @@
 import { useEffect, useMemo } from 'react'
 import { Target } from 'lucide-react'
 import { PageSection } from '@/components/layout/PageSection'
+import { ScopeSelector } from '@/components/filters/ScopeSelector'
 import { useFilters } from '@/hooks/use-filters'
-import { getPeriodKey, useDashboardDataStore } from '@/stores/dashboard-data-store'
+import { usePeriodScope } from '@/hooks/use-period-scope'
+import { useDashboardDataStore } from '@/stores/dashboard-data-store'
+import { describeSelection, getPeriodKeysForSelection } from '@/utils/period-selection'
+import { aggregateTargets } from '@/utils/period-aggregate'
 import { getMonthName } from '@/utils/date-utils'
 import { TargetBrandsList } from './TargetBrandsList'
 
@@ -44,34 +48,47 @@ function TargetCountCard({ targetCount, periodLabel }: { targetCount: number; pe
 
 export function XMonthTargetTab() {
   const { year, month } = useFilters()
+  const periodScope = usePeriodScope(year, month)
+  const { scope, selection } = periodScope
   const ensurePeriod = useDashboardDataStore((s) => s.ensurePeriod)
+  const periods = useDashboardDataStore((s) => s.periods)
 
-  const currentPeriodKey = useMemo(() => getPeriodKey(year, month), [year, month])
-  const currentPeriodData = useDashboardDataStore((s) => s.periods[currentPeriodKey])
+  const periodKeys = useMemo(() => getPeriodKeysForSelection(selection), [selection])
 
-  // Etiket için bir sonraki ay (ör. Nisan'dayken "Mayıs ... hedeflenen markalar")
+  // "Bir sonraki ay" etiketi sadece Aylık modda anlamlı (ör. Nisan'dayken "Mayıs ... hedeflenen markalar").
+  // Çeyreklik/Yıllık modda "bir sonraki çeyrek/yıl" yerine seçili dönemin kendisi gösterilir.
   const targetPeriod = useMemo(() => getOffsetPeriod(year, month, 1), [year, month])
 
   useEffect(() => {
-    ensurePeriod(year, month)
-  }, [ensurePeriod, year, month])
+    periodKeys.forEach((key) => {
+      const [yStr, mStr] = key.split('-')
+      const y = Number(yStr)
+      const m = Number(mStr)
+      if (Number.isFinite(y) && Number.isFinite(m)) void ensurePeriod(y, m)
+    })
+  }, [periodKeys, ensurePeriod])
 
-  // Bu ayın "Canlı Değil" markaları = bir sonraki ay canlıya alınması hedeflenen markalar
+  // Seçili dönemdeki (dedup'lanmış) "Canlı Değil" markalar
   const pendingTargets = useMemo(
-    () => (currentPeriodData?.targets ?? []).filter((t) => t.status !== 'live'),
-    [currentPeriodData?.targets],
+    () => aggregateTargets(selection, periods).targets.filter((t) => t.status !== 'live'),
+    [selection, periods],
   )
 
   const targetCount = pendingTargets.length
-  const periodLabel = `${getMonthName(targetPeriod.month)} ${targetPeriod.year}`
+  const isMonthly = scope === 'monthly'
+  const periodLabel = isMonthly ? `${getMonthName(targetPeriod.month)} ${targetPeriod.year}` : describeSelection(selection)
+  const title = isMonthly ? 'Bir Sonraki Ay Hedef' : 'Bu Dönemde Canlı Olmayanlar'
+  const description = isMonthly
+    ? `${periodLabel} için canlıya alınması hedeflenen markalar`
+    : `${periodLabel} döneminde henüz canlıya alınmamış markalar`
 
   return (
     <div className="space-y-6">
+      <div className="flex justify-end">
+        <ScopeSelector periodScope={periodScope} />
+      </div>
       <TargetCountCard targetCount={targetCount} periodLabel={periodLabel} />
-      <PageSection
-        title="Bir Sonraki Ay Hedef"
-        description={`${periodLabel} için canlıya alınması hedeflenen markalar`}
-      >
+      <PageSection title={title} description={description}>
         <TargetBrandsList data={pendingTargets} showStatus={false} />
       </PageSection>
     </div>

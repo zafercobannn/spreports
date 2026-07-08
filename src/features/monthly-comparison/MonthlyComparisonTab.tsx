@@ -3,9 +3,12 @@ import { ResponsiveBar, type BarCustomLayerProps, type BarDatum } from '@nivo/ba
 import { dashboardChartTheme } from '@/components/charts/chart-theme'
 import { ChartContainer } from '@/components/charts/ChartContainer'
 import { PageSection } from '@/components/layout/PageSection'
+import { ScopeSelector } from '@/components/filters/ScopeSelector'
 import { useFilters } from '@/hooks/use-filters'
-import { getPeriodKey, useDashboardDataStore } from '@/stores/dashboard-data-store'
-import { getMonthName } from '@/utils/date-utils'
+import { usePeriodScope } from '@/hooks/use-period-scope'
+import { useDashboardDataStore } from '@/stores/dashboard-data-store'
+import { getPeriodKeysForSelection, getPreviousPeriodSelection, describeSelection } from '@/utils/period-selection'
+import { aggregateMonthlyGPV } from '@/utils/period-aggregate'
 import { formatNumber } from '@/utils/format'
 
 type MetricValueType = 'k' | 'number'
@@ -40,23 +43,6 @@ interface ComparisonBarDatum extends BarDatum {
 
 const PREVIOUS_COLOR = 'var(--color-muted-foreground)'
 const CURRENT_COLOR = 'var(--color-chart)'
-
-function getOffsetPeriod(year: number, month: number, offset: number): { year: number; month: number } {
-  let nextYear = year
-  let nextMonth = month + offset
-
-  while (nextMonth < 1) {
-    nextMonth += 12
-    nextYear -= 1
-  }
-
-  while (nextMonth > 12) {
-    nextMonth -= 12
-    nextYear += 1
-  }
-
-  return { year: nextYear, month: nextMonth }
-}
 
 function formatAsK(value: number): string {
   if (value <= 0) return '0'
@@ -191,68 +177,73 @@ function createBarMonthLabelLayer(
 
 export function MonthlyComparisonTab() {
   const { year, month } = useFilters()
+  const periodScope = usePeriodScope(year, month)
+  const { selection } = periodScope
   const ensurePeriod = useDashboardDataStore((s) => s.ensurePeriod)
+  const periods = useDashboardDataStore((s) => s.periods)
 
-  const currentKey = useMemo(() => getPeriodKey(year, month), [year, month])
-  const currentPeriodData = useDashboardDataStore((s) => s.periods[currentKey])
-
-  const previousPeriod = useMemo(() => getOffsetPeriod(year, month, -1), [year, month])
-  const previousKey = useMemo(
-    () => getPeriodKey(previousPeriod.year, previousPeriod.month),
-    [previousPeriod.month, previousPeriod.year],
-  )
-  const previousPeriodData = useDashboardDataStore((s) => s.periods[previousKey])
+  const previousSelection = useMemo(() => getPreviousPeriodSelection(selection), [selection])
+  const periodKeys = useMemo(() => getPeriodKeysForSelection(selection), [selection])
+  const previousPeriodKeys = useMemo(() => getPeriodKeysForSelection(previousSelection), [previousSelection])
 
   useEffect(() => {
-    ensurePeriod(year, month)
-    ensurePeriod(previousPeriod.year, previousPeriod.month)
-  }, [ensurePeriod, month, previousPeriod.month, previousPeriod.year, year])
+    ;[...periodKeys, ...previousPeriodKeys].forEach((key) => {
+      const [yStr, mStr] = key.split('-')
+      const y = Number(yStr)
+      const m = Number(mStr)
+      if (Number.isFinite(y) && Number.isFinite(m)) void ensurePeriod(y, m)
+    })
+  }, [periodKeys, previousPeriodKeys, ensurePeriod])
 
-  const currentLabel = `${getMonthName(month)} ${year}`
-  const previousLabel = `${getMonthName(previousPeriod.month)} ${previousPeriod.year}`
+  const currentGPV = useMemo(() => aggregateMonthlyGPV(selection, periods), [selection, periods])
+  const previousGPV = useMemo(() => aggregateMonthlyGPV(previousSelection, periods), [previousSelection, periods])
 
-  const metrics = useMemo<ComparisonMetric[]>(() => {
-    const currentMonthly = currentPeriodData?.monthlyGPV
-    const previousMonthly = previousPeriodData?.monthlyGPV
+  const currentLabel = describeSelection(selection)
+  const previousLabel = describeSelection(previousSelection)
 
-    return [
+  const metrics = useMemo<ComparisonMetric[]>(
+    () => [
       {
         id: 'sp-gpv',
         label: 'SP GPV',
         valueType: 'k',
-        previousValue: Math.max(0, previousMonthly?.spGPV ?? 0),
-        currentValue: Math.max(0, currentMonthly?.spGPV ?? 0),
+        previousValue: Math.max(0, previousGPV.spGPV),
+        currentValue: Math.max(0, currentGPV.spGPV),
       },
       {
         id: 'shikas',
         label: 'Shikas',
         valueType: 'k',
-        previousValue: Math.max(0, previousMonthly?.shikasGPV ?? 0),
-        currentValue: Math.max(0, currentMonthly?.shikasGPV ?? 0),
+        previousValue: Math.max(0, previousGPV.shikasGPV),
+        currentValue: Math.max(0, currentGPV.shikasGPV),
       },
       {
         id: 'live-sp',
         label: 'En az 1 kere ödeme almış',
         valueType: 'number',
-        previousValue: Math.max(0, previousMonthly?.liveSPCount ?? 0),
-        currentValue: Math.max(0, currentMonthly?.liveSPCount ?? 0),
+        previousValue: Math.max(0, previousGPV.liveSPCount),
+        currentValue: Math.max(0, currentGPV.liveSPCount),
       },
-    ]
-  }, [currentPeriodData?.monthlyGPV, previousPeriodData?.monthlyGPV])
+    ],
+    [currentGPV, previousGPV],
+  )
 
   const hasAnyData = useMemo(
     () => metrics.some((metric) => metric.previousValue > 0 || metric.currentValue > 0),
     [metrics],
   )
 
-  const manualShares = useMemo<ManualShares>(() => ({
-    previousGpvShare: previousPeriodData?.monthlyGPV?.gpvShare ?? 0,
-    currentGpvShare: currentPeriodData?.monthlyGPV?.gpvShare ?? 0,
-    previousShikasShare: previousPeriodData?.monthlyGPV?.shikasShare ?? 0,
-    currentShikasShare: currentPeriodData?.monthlyGPV?.shikasShare ?? 0,
-    previousLiveSPShare: previousPeriodData?.monthlyGPV?.liveSPShare ?? 0,
-    currentLiveSPShare: currentPeriodData?.monthlyGPV?.liveSPShare ?? 0,
-  }), [previousPeriodData?.monthlyGPV, currentPeriodData?.monthlyGPV])
+  const manualShares = useMemo<ManualShares>(
+    () => ({
+      previousGpvShare: previousGPV.gpvShare,
+      currentGpvShare: currentGPV.gpvShare,
+      previousShikasShare: previousGPV.shikasShare,
+      currentShikasShare: currentGPV.shikasShare,
+      previousLiveSPShare: previousGPV.liveSPShare,
+      currentLiveSPShare: currentGPV.liveSPShare,
+    }),
+    [currentGPV, previousGPV],
+  )
 
   const chartData = useMemo(() => buildChartRows(metrics, manualShares), [metrics, manualShares])
   const shareLabelLayer = useMemo(() => createShareLabelLayer(), [])
@@ -264,6 +255,10 @@ export function MonthlyComparisonTab() {
 
   return (
     <div className="space-y-6">
+      <div className="flex justify-end">
+        <ScopeSelector periodScope={periodScope} />
+      </div>
+
       {/* Mini metric cards — current vs previous deltas */}
       <div className="grid grid-cols-1 gap-4 lg:grid-cols-3">
         {metrics.map((m, idx) => {
@@ -327,7 +322,7 @@ export function MonthlyComparisonTab() {
       </div>
 
       <PageSection
-        title="Önceki Ay Karşılaştırma"
+        title="Dönem Karşılaştırma"
         description={`${previousLabel} ve ${currentLabel} karşılaştırması`}
       >
         <ChartContainer height={470} isEmpty={!hasAnyData}>
