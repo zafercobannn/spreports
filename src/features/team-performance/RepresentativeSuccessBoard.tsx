@@ -15,6 +15,7 @@ interface RepresentativeSuccessBoardProps {
   trackedRealizedCount: number
   trackedTargetCount: number
   year: number
+  onSelectRep?: (name: string) => void
 }
 
 function getInitials(name: string): string {
@@ -46,6 +47,7 @@ export function RepresentativeSuccessBoard({
   trackedRealizedCount,
   trackedTargetCount,
   year,
+  onSelectRep,
 }: RepresentativeSuccessBoardProps) {
   const usesCsatModel = isRepresentativeCsatPeriod(year, month)
 
@@ -118,7 +120,12 @@ export function RepresentativeSuccessBoard({
       {/* Spotlight + Leaderboard */}
       <div className="grid grid-cols-1 gap-4 xl:grid-cols-[320px_minmax(0,1fr)]">
         {/* Spotlight */}
-        <div className="bento-card relative overflow-hidden p-0">
+        <div
+          className={`bento-card relative overflow-hidden p-0 ${onSelectRep ? 'cursor-pointer transition-transform hover:-translate-y-0.5' : ''}`}
+          onClick={onSelectRep ? () => onSelectRep(top.record.name) : undefined}
+          role={onSelectRep ? 'button' : undefined}
+          tabIndex={onSelectRep ? 0 : undefined}
+        >
           <div
             className="absolute inset-0"
             style={{
@@ -214,7 +221,11 @@ export function RepresentativeSuccessBoard({
                   const isFirst = idx === 0
 
                   return (
-                    <tr key={row.record.id} className="border-b border-border last:border-0 transition-colors hover:bg-hover">
+                    <tr
+                      key={row.record.id}
+                      className={`border-b border-border last:border-0 transition-colors hover:bg-hover ${onSelectRep ? 'cursor-pointer' : ''}`}
+                      onClick={onSelectRep ? () => onSelectRep(row.record.name) : undefined}
+                    >
                       <td className="px-3 py-3">
                         <span
                           className={
