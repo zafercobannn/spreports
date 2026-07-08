@@ -1,10 +1,9 @@
 import { useState } from 'react'
-import { RepresentativeSuccessBoard } from './RepresentativeSuccessBoard'
+import { TeamLeaderboardSection } from './TeamLeaderboardSection'
 import { RepresentativeMonthlyNpsChart } from './RepresentativeMonthlyNpsChart'
 import { RepresentativeDetailView } from './RepresentativeDetailView'
 import { RepCompareTab } from '@/features/representative-compare/RepCompareTab'
 import { PageSection } from '@/components/layout/PageSection'
-import { getMonthName } from '@/utils/date-utils'
 import { useFilters } from '@/hooks/use-filters'
 import { useDashboardPeriodData } from '@/hooks/use-dashboard-data'
 
@@ -13,8 +12,6 @@ export function TeamPerformanceTab() {
   const periodData = useDashboardPeriodData()
   const [selectedRepName, setSelectedRepName] = useState<string | null>(null)
   if (!periodData) return null
-  const autoRealizedCount = periodData.targets.filter((target) => target.status === 'live').length
-  const trackedRealizedCount = periodData.realizedCount ?? autoRealizedCount
 
   if (selectedRepName) {
     return (
@@ -29,16 +26,12 @@ export function TeamPerformanceTab() {
 
   return (
     <div className="space-y-6">
-      <PageSection title="Temsilci Başarı Endeksi" description="Aylık temsilci skorları ve canlıya alma süresi trendi — bir temsilciye tıklayarak detaylarını incele">
+      <PageSection title="Temsilci Başarı Endeksi" description="Aylık/çeyreklik/yıllık temsilci skorları — bir temsilciye tıklayarak detaylarını incele">
         <div className="space-y-5">
-          <RepresentativeSuccessBoard
-            data={periodData.representativeSuccess}
-            weights={periodData.representativeWeights}
+          <TeamLeaderboardSection
             month={month}
-            monthLabel={getMonthName(month)}
-            trackedRealizedCount={trackedRealizedCount}
-            trackedTargetCount={periodData.targetCount}
             year={year}
+            monthlyPeriodData={periodData}
             onSelectRep={setSelectedRepName}
           />
           <RepresentativeMonthlyNpsChart year={year} month={month} />

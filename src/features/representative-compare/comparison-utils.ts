@@ -46,7 +46,7 @@ export interface AggregatedRep {
   successIndex: number
 }
 
-function pickWeights(selection: PeriodSelection): RepresentativeSuccessWeights {
+export function pickWeights(selection: PeriodSelection): RepresentativeSuccessWeights {
   if (selection.scope === 'monthly') return getDefaultRepresentativeWeights(selection.year, selection.value)
   if (selection.scope === 'quarterly') {
     const start = (selection.value - 1) * 3 + 1
@@ -55,7 +55,7 @@ function pickWeights(selection: PeriodSelection): RepresentativeSuccessWeights {
   return getDefaultRepresentativeWeights(selection.year, 12)
 }
 
-function selectionEffectiveMonth(selection: PeriodSelection): number {
+export function selectionEffectiveMonth(selection: PeriodSelection): number {
   if (selection.scope === 'monthly') return selection.value
   if (selection.scope === 'quarterly') return (selection.value - 1) * 3 + 3
   return 12
