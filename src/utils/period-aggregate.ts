@@ -54,11 +54,29 @@ export function aggregateMonthlyGPV(selection: PeriodSelection, periods: Periods
   }
 }
 
+/**
+ * Firma adını eşleştirme anahtarına indirger. Aynı firma ay ay farklı yazılabildiği için
+ * ("ABC A.Ş." / "abc as") büyük-küçük harf, Türkçe karakter, boşluk ve noktalama farkları
+ * eşleşmeyi bozmasın.
+ */
+function firmMatchKey(name: string): string {
+  return name
+    .toLocaleLowerCase('tr-TR')
+    .replaceAll('ı', 'i')
+    .replaceAll('ğ', 'g')
+    .replaceAll('ü', 'u')
+    .replaceAll('ş', 's')
+    .replaceAll('ö', 'o')
+    .replaceAll('ç', 'c')
+    .replace(/[^a-z0-9]/g, '')
+}
+
 function sumFirmGpvByName(keys: string[], periods: Periods): Map<string, number> {
   const totals = new Map<string, number>()
   keys.forEach((key) => {
     ;(periods[key]?.topFirms ?? []).forEach((firm) => {
-      totals.set(firm.name, (totals.get(firm.name) ?? 0) + firm.gpv)
+      const matchKey = firmMatchKey(firm.name)
+      totals.set(matchKey, (totals.get(matchKey) ?? 0) + firm.gpv)
     })
   })
   return totals
@@ -66,8 +84,13 @@ function sumFirmGpvByName(keys: string[], periods: Periods): Map<string, number>
 
 /**
  * Firma isimine göre gruplayıp GPV'yi seçili aralık boyunca toplar, sonra yeniden sıralar.
- * "Önceki dönem GPV"/"%değişim" burada dönem toplamı vs bir önceki eşdeğer dönem toplamı olarak hesaplanır
- * (örn. Q1 2026 vs Q4 2025) — tek ay karşılaştırmasıyla aynı mantık, sadece aralık genişletilmiş hâli.
+ *
+ * "Önceki dönem GPV"nin birincil kaynağı, o dönemin satırlarına import/admin ile girilen
+ * `previousMonthGPV` alanıdır; aralık genişse ayların girilen değerleri toplanır (Q1'in
+ * toplamı = Ara+Oca+Şub, yani bir önceki çeyrek). Girilmemişse (0) bir önceki eşdeğer
+ * dönemin GPV toplamından türetilir. Türetme tek başına yeterli değil: bir firma bu dönem
+ * listeye yeni girdiyse önceki dönemin Top 15'inde bulunmaz ve 0 döner — oysa girilen değer
+ * doludur.
  */
 export function aggregateTopFirms(selection: PeriodSelection, periods: Periods): TopFirm[] {
   const keys = getPeriodKeysForSelection(selection)
@@ -76,32 +99,46 @@ export function aggregateTopFirms(selection: PeriodSelection, periods: Periods):
 
   const byName = new Map<
     string,
-    { gpv: number; shipmentSent: number; ikasCargoValue: number; usesPars: boolean; usesPwi: boolean }
+    {
+      name: string
+      gpv: number
+      enteredPreviousGPV: number
+      shipmentSent: number
+      ikasCargoValue: number
+      usesPars: boolean
+      usesPwi: boolean
+    }
   >()
   keys.forEach((key) => {
     ;(periods[key]?.topFirms ?? []).forEach((firm) => {
-      const existing = byName.get(firm.name) ?? {
+      const matchKey = firmMatchKey(firm.name)
+      const existing = byName.get(matchKey) ?? {
+        name: firm.name,
         gpv: 0,
+        enteredPreviousGPV: 0,
         shipmentSent: 0,
         ikasCargoValue: 0,
         usesPars: false,
         usesPwi: false,
       }
       existing.gpv += firm.gpv
+      existing.enteredPreviousGPV += Math.max(0, firm.previousMonthGPV)
       existing.shipmentSent += firm.shipmentSent
       existing.ikasCargoValue += firm.ikasCargoValue
       existing.usesPars = existing.usesPars || firm.usesPars
       existing.usesPwi = existing.usesPwi || firm.usesPwi
-      byName.set(firm.name, existing)
+      byName.set(matchKey, existing)
     })
   })
 
   return Array.from(byName.entries())
-    .map(([name, agg]) => {
-      const previousMonthGPV = previousGpvByName.get(name) ?? 0
+    .map(([matchKey, agg]) => {
+      const previousMonthGPV = agg.enteredPreviousGPV > 0
+        ? agg.enteredPreviousGPV
+        : previousGpvByName.get(matchKey) ?? 0
       return {
         rank: 0,
-        name,
+        name: agg.name,
         gpv: agg.gpv,
         previousMonthGPV,
         gpvChange: calculateGpvChangePercent(agg.gpv, previousMonthGPV),

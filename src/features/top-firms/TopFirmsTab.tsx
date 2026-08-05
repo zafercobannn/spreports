@@ -11,7 +11,7 @@ import { sum, ratio } from '@/utils/calculations'
 import { useFilters } from '@/hooks/use-filters'
 import { usePeriodScope } from '@/hooks/use-period-scope'
 import { useDashboardDataStore } from '@/stores/dashboard-data-store'
-import { getPeriodKeysForSelection } from '@/utils/period-selection'
+import { getPeriodKeysForSelection, getPreviousPeriodSelection } from '@/utils/period-selection'
 import { aggregateTopFirms } from '@/utils/period-aggregate'
 
 export function TopFirmsTab() {
@@ -22,15 +22,20 @@ export function TopFirmsTab() {
   const ensurePeriod = useDashboardDataStore((s) => s.ensurePeriod)
 
   const periodKeys = useMemo(() => getPeriodKeysForSelection(selection), [selection])
+  // Önceki dönem de yüklenmeli: "Önceki Ay GPV" girilmemiş firmalarda değer oradan türetiliyor.
+  const previousPeriodKeys = useMemo(
+    () => getPeriodKeysForSelection(getPreviousPeriodSelection(selection)),
+    [selection],
+  )
 
   useEffect(() => {
-    periodKeys.forEach((key) => {
+    ;[...periodKeys, ...previousPeriodKeys].forEach((key) => {
       const [yStr, mStr] = key.split('-')
       const y = Number(yStr)
       const m = Number(mStr)
       if (Number.isFinite(y) && Number.isFinite(m)) void ensurePeriod(y, m)
     })
-  }, [periodKeys, ensurePeriod])
+  }, [periodKeys, previousPeriodKeys, ensurePeriod])
 
   const data = useMemo(() => aggregateTopFirms(selection, periods), [selection, periods])
 
