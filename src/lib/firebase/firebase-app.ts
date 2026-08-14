@@ -45,7 +45,12 @@ const missingFirebaseConfigKeys = Object.entries(requiredFields)
   .map(([key]) => key)
 
 const syncFlag = import.meta.env.VITE_ENABLE_FIREBASE_SYNC !== 'false'
-const fallbackAdminEmails = ['hilal.mingin@ikas.com', 'mali.sungur@ikas.com', 'zafer.coban@ikas.com']
+const fallbackAdminEmails = [
+  'hilal.mingin@ikas.com',
+  'mali.sungur@ikas.com',
+  'zafer.coban@ikas.com',
+  'sinan.adan@ikas.com',
+]
 const adminEmailSet = new Set(
   [...fallbackAdminEmails, ...readEnv('VITE_FIREBASE_ADMIN_EMAILS').split(',')]
     .map(normalizeEmail)

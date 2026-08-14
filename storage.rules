@@ -8,7 +8,7 @@ service firebase.storage {
     function isAdmin() {
       return isSignedIn()
         && request.auth.token.email != null
-        && request.auth.token.email in ['hilal.mingin@ikas.com', 'mali.sungur@ikas.com', 'zafer.coban@ikas.com'];
+        && request.auth.token.email in ['hilal.mingin@ikas.com', 'mali.sungur@ikas.com', 'zafer.coban@ikas.com', 'sinan.adan@ikas.com'];
     }
 
     match /representative-images/{representativeId}/{fileName} {
