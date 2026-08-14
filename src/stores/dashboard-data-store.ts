@@ -163,7 +163,10 @@ function normalizeTopFirm(firm: unknown, rank: number, seedFirm?: TopFirm): TopF
   return {
     rank,
     name: typeof firm.name === 'string' ? firm.name : base.name,
-    sector: typeof firm.sector === 'string' ? firm.sector.trim() : base.sector,
+    // trim() burada yapılmaz: bu normalize her tuş vuruşunda çalışıyor ve
+    // kelime arasındaki boşluk yazılır yazılmaz silinip input'a geri basılıyordu.
+    // Kırpma, okuma tarafında (aggregateTopFirms) yapılıyor.
+    sector: typeof firm.sector === 'string' ? firm.sector : base.sector,
     gpv,
     previousMonthGPV,
     gpvChange,

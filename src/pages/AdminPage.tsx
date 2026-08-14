@@ -365,6 +365,13 @@ function TopFirmsEditor({
                       itemIndex === index ? { ...item, sector: event.target.value } : item
                     )))
                   }
+                  onBlur={(event) => {
+                    const trimmed = event.target.value.trim()
+                    if (trimmed === firm.sector) return
+                    onChange(data.map((item, itemIndex) => (
+                      itemIndex === index ? { ...item, sector: trimmed } : item
+                    )))
+                  }}
                   placeholder="Ör: Moda, Kozmetik"
                 />
               </label>
