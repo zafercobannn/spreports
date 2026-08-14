@@ -51,8 +51,8 @@ export function downloadPlatformTemplate(mode: 'sp' | 'premium'): void {
 export function downloadTopFirmsTemplate(): void {
   downloadCsvTemplate({
     filename: 'top-firmalar-import-sablonu.csv',
-    headers: ['Mağaza', 'GPV', 'Önceki Ay GPV', 'Gönderi', 'ikas Kargo Paket Adedi', 'PARS', 'PWI'],
-    sampleRow: ['Örnek Mağaza', 125000, 98000, 420, 260, true, false],
+    headers: ['Mağaza', 'Sektör', 'GPV', 'Önceki Ay GPV', 'Gönderi', 'ikas Kargo Paket Adedi', 'PARS', 'PWI'],
+    sampleRow: ['Örnek Mağaza', 'Moda & Tekstil', 125000, 98000, 420, 260, true, false],
   })
 }
 

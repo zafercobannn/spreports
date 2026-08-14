@@ -54,6 +54,16 @@ export function TopFirmsTable({ data }: TopFirmsTableProps) {
       render: (row) => <span className="font-medium">{row.name}</span>,
     },
     {
+      key: 'sector',
+      header: 'Sektör',
+      sortable: true,
+      render: (row) => (
+        row.sector
+          ? <Badge variant="outline">{row.sector}</Badge>
+          : <span className="text-subtle">—</span>
+      ),
+    },
+    {
       key: 'gpv',
       header: 'GPV',
       align: 'right',

@@ -101,6 +101,7 @@ export function aggregateTopFirms(selection: PeriodSelection, periods: Periods):
     string,
     {
       name: string
+      sector: string
       gpv: number
       enteredPreviousGPV: number
       shipmentSent: number
@@ -114,6 +115,7 @@ export function aggregateTopFirms(selection: PeriodSelection, periods: Periods):
       const matchKey = firmMatchKey(firm.name)
       const existing = byName.get(matchKey) ?? {
         name: firm.name,
+        sector: '',
         gpv: 0,
         enteredPreviousGPV: 0,
         shipmentSent: 0,
@@ -121,6 +123,8 @@ export function aggregateTopFirms(selection: PeriodSelection, periods: Periods):
         usesPars: false,
         usesPwi: false,
       }
+      // Sektör aya göre değişmez; aralıkta girilmiş ilk dolu değer korunur.
+      if (!existing.sector) existing.sector = (firm.sector ?? '').trim()
       existing.gpv += firm.gpv
       existing.enteredPreviousGPV += Math.max(0, firm.previousMonthGPV)
       existing.shipmentSent += firm.shipmentSent
@@ -139,6 +143,7 @@ export function aggregateTopFirms(selection: PeriodSelection, periods: Periods):
       return {
         rank: 0,
         name: agg.name,
+        sector: agg.sector,
         gpv: agg.gpv,
         previousMonthGPV,
         gpvChange: calculateGpvChangePercent(agg.gpv, previousMonthGPV),

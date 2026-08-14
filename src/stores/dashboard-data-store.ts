@@ -114,6 +114,7 @@ function normalizeTopFirm(firm: unknown, rank: number, seedFirm?: TopFirm): TopF
   const base = seedFirm ?? {
     rank,
     name: '',
+    sector: '',
     gpv: 0,
     previousMonthGPV: 0,
     gpvChange: 0,
@@ -162,6 +163,7 @@ function normalizeTopFirm(firm: unknown, rank: number, seedFirm?: TopFirm): TopF
   return {
     rank,
     name: typeof firm.name === 'string' ? firm.name : base.name,
+    sector: typeof firm.sector === 'string' ? firm.sector.trim() : base.sector,
     gpv,
     previousMonthGPV,
     gpvChange,

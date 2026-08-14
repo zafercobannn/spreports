@@ -288,6 +288,8 @@ function PlatformEditorPanel({
   )
 }
 
+const sectorOptionsId = 'top-firm-sector-options'
+
 function TopFirmsEditor({
   data,
   onChange,
@@ -295,12 +297,25 @@ function TopFirmsEditor({
   data: TopFirm[]
   onChange: (next: TopFirm[]) => void
 }) {
+  // Aynı sektörün satırdan satıra farklı yazılmasını önlemek için listede
+  // hâlihazırda girilmiş sektörleri öneri olarak sun.
+  const sectorSuggestions = useMemo(
+    () => Array.from(new Set(data.map((firm) => firm.sector.trim()).filter(Boolean))).sort((a, b) => a.localeCompare(b, 'tr')),
+    [data],
+  )
+
   return (
     <div className="space-y-3 xl:overflow-x-auto xl:pb-1">
-      <div className="space-y-3 xl:min-w-[1260px]">
-        <div className="hidden grid-cols-[56px_minmax(220px,1.2fr)_140px_140px_110px_150px_150px_150px_44px] gap-3 px-2 xl:grid">
+      <datalist id={sectorOptionsId}>
+        {sectorSuggestions.map((sector) => (
+          <option key={sector} value={sector} />
+        ))}
+      </datalist>
+      <div className="space-y-3 xl:min-w-[1440px]">
+        <div className="hidden grid-cols-[56px_minmax(200px,1.2fr)_minmax(160px,0.9fr)_140px_140px_110px_150px_150px_150px_44px] gap-3 px-2 xl:grid">
           <span className="text-[11px] font-semibold tracking-[0.14em] text-muted-foreground uppercase">#</span>
           <span className="text-[11px] font-semibold tracking-[0.14em] text-muted-foreground uppercase">Mağaza</span>
+          <span className="text-[11px] font-semibold tracking-[0.14em] text-muted-foreground uppercase">Sektör</span>
           <span className="text-[11px] font-semibold tracking-[0.14em] text-muted-foreground uppercase">GPV</span>
           <span className="text-[11px] font-semibold tracking-[0.14em] text-muted-foreground uppercase">Önceki GPV</span>
           <span className="text-[11px] font-semibold tracking-[0.14em] text-muted-foreground uppercase">Değişim %</span>
@@ -316,7 +331,7 @@ function TopFirmsEditor({
           return (
             <div
               key={index}
-              className="grid grid-cols-1 gap-2 rounded-lg border border-black/6 bg-white/50 p-3 xl:grid-cols-[56px_minmax(220px,1.2fr)_140px_140px_110px_150px_150px_150px_44px]"
+              className="grid grid-cols-1 gap-2 rounded-lg border border-black/6 bg-white/50 p-3 xl:grid-cols-[56px_minmax(200px,1.2fr)_minmax(160px,0.9fr)_140px_140px_110px_150px_150px_150px_44px]"
             >
               <div className="space-y-1">
                 <span className="text-[11px] font-semibold tracking-[0.14em] text-muted-foreground uppercase xl:hidden">Sıra</span>
@@ -336,6 +351,21 @@ function TopFirmsEditor({
                     )))
                   }
                   placeholder="Mağaza"
+                />
+              </label>
+
+              <label className="space-y-1">
+                <span className="text-[11px] font-semibold tracking-[0.14em] text-muted-foreground uppercase xl:hidden">Sektör</span>
+                <input
+                  className={smallInputClassName}
+                  value={firm.sector}
+                  list={sectorOptionsId}
+                  onChange={(event) =>
+                    onChange(data.map((item, itemIndex) => (
+                      itemIndex === index ? { ...item, sector: event.target.value } : item
+                    )))
+                  }
+                  placeholder="Ör: Moda, Kozmetik"
                 />
               </label>
 
@@ -1082,6 +1112,7 @@ function AdminWorkspace() {
                         {
                           rank: data.topFirms.length + 1,
                           name: '',
+                          sector: '',
                           gpv: 0,
                           previousMonthGPV: 0,
                           gpvChange: 0,
@@ -1114,7 +1145,7 @@ function AdminWorkspace() {
                   }
                 />
                 <p className="text-xs text-muted-foreground">
-                  CSV / Excel zorunlu alanları: `Mağaza`, `GPV`, `Önceki Ay GPV`, `Gönderi`, `ikas Kargo Paket Adedi`, `PARS`. İsteğe bağlı: `PWI`.
+                  CSV / Excel zorunlu alanları: `Mağaza`, `GPV`, `Önceki Ay GPV`, `Gönderi`, `ikas Kargo Paket Adedi`, `PARS`. İsteğe bağlı: `Sektör`, `PWI`.
                 </p>
               </div>
             </AdminSectionCard>

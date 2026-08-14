@@ -1,6 +1,8 @@
 export interface TopFirm {
   rank: number
   name: string
+  /** Firmanın faaliyet gösterdiği sektör. Eski kayıtlarda boş olabilir. */
+  sector: string
   gpv: number
   previousMonthGPV: number
   gpvChange: number

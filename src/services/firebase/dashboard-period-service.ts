@@ -30,7 +30,8 @@ import { calculateRepresentativeMetrics } from '@/features/team-performance/repr
 
 const PERIOD_COLLECTION = 'dashboard_periods'
 const REPRESENTATIVE_SUBCOLLECTION = 'representatives'
-const PERIOD_SCHEMA_VERSION = 2
+// v3: topFirms satırlarına `sector` alanı eklendi (eski dokümanlarda boş kabul edilir).
+const PERIOD_SCHEMA_VERSION = 3
 
 // Cohort tek kaynak (global) doküman: her dönemde tekrarlanan kopya yerine
 // tüm go-live aylarının birikimli matrisi burada tutulur.

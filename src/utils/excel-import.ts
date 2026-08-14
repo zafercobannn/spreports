@@ -250,6 +250,7 @@ export function parseTopFirmsExcelRows(rows: RowRecord[]): TopFirm[] {
         Math.round(toNumber(getCell(row, ['rank', 'sira'])) || index + 1),
       )
       const name = normalizeText(getCell(row, ['magaza', 'marka', 'name', 'firma']))
+      const sector = normalizeText(getCell(row, ['sektor', 'sector', 'kategori', 'sektoru']))
       const gpv = Math.max(0, toNumber(getCell(row, ['gpv', 'ilgiliaygpv', 'currentmonthgpv'])))
       const previousMonthGPV = Math.max(
         0,
@@ -275,6 +276,7 @@ export function parseTopFirmsExcelRows(rows: RowRecord[]): TopFirm[] {
       return {
         rank,
         name,
+        sector,
         gpv,
         previousMonthGPV,
         gpvChange: calculateGpvChangePercent(gpv, previousMonthGPV),
