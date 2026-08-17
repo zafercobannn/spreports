@@ -8,8 +8,8 @@ const namePhotoMap: Record<string, string> = {
   'hüseyin': 'images/huseyin.jpg',
   'onur': 'images/onur.jpg',
   'dilşad': 'images/dilsad.jpg',
-  'izel': 'images/izel.png',
-  'ataç': 'images/izel.png',
+  'izel': 'images/izel-atac.jpg',
+  'ataç': 'images/izel-atac.jpg',
 }
 
 const base = import.meta.env.BASE_URL ?? '/'
